@@ -1,0 +1,33 @@
+
+Tech minimum:
+
+- vive hmd (controllers useful for calibration)
+- kinect v2 (calibration used the win sdk)
+- two screens
+- streaming data to Max to control bells
+
+- calibration of kinect-proj 
+- calibration of hmd to KP space (is vive reliable each time?)
+- calibration of bell locations to KP space
+
+platform options:
+
+c++ app(s) (as with cos previous version), can use shared mem
+(reloadable?) node.js module (as with insuperposition)
+(dyn) max object (as with inhabitat), maybe gl3 (risky) or own context (dyn again)
+webgl/vr render (!)
+
+fastest paths:
+- kinect cloud/heighmap to hmd and projector outputs
+
+steal code from COS and insuperposition
+
+breaking it up into separate modules has flexibility and stability benefits
+(max-like)
+
+
+n4m option could keep things somewhat tidy; certainly it can play nicer with dyn
+- can pass around state etc. in max under the guise of a t_symbol / t_object pointer?
+- that means we can have separate dyn objects for kinect, for sim, for renderers, etc. 
+- so long as linking isn't a headache, that is
+
