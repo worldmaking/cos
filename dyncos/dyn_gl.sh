@@ -1,0 +1,3 @@
+MAXSDK=~/Documents/Max\ 8/Packages/max-sdk/source/c74support/
+
+clang++ dyn_gl.cpp ../lib/osx/libglfw3.a -x c++ -std=c++11 -stdlib=libc++ -arch i386 -arch x86_64 -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk -mmacosx-version-min=10.7 -I../include/ -I../include/al/ -I"$MAXSDK"/max-includes -I"$MAXSDK"/msp-includes -I"$MAXSDK"/jit-includes -F"$MAXSDK"/max-includes -F"$MAXSDK"/msp-includes -F"$MAXSDK"jit-includes -dynamiclib -undefined dynamic_lookup  -o dyn_gl.dylib
