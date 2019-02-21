@@ -4,13 +4,13 @@
 		"appversion" : 		{
 			"major" : 8,
 			"minor" : 0,
-			"revision" : 2,
+			"revision" : 3,
 			"architecture" : "x64",
 			"modernui" : 1
 		}
 ,
 		"classnamespace" : "box",
-		"rect" : [ 423.0, 292.0, 904.0, 503.0 ],
+		"rect" : [ 95.0, 93.0, 776.0, 501.0 ],
 		"bglocked" : 0,
 		"openinpresentation" : 0,
 		"default_fontsize" : 12.0,
@@ -65,23 +65,12 @@
 			}
 , 			{
 				"box" : 				{
-					"id" : "obj-13",
-					"maxclass" : "newobj",
-					"numinlets" : 1,
-					"numoutlets" : 0,
-					"patching_rect" : [ 464.0, 92.0, 87.0, 22.0 ],
-					"text" : "print editedcpp"
-				}
-
-			}
-, 			{
-				"box" : 				{
 					"id" : "obj-12",
 					"maxclass" : "newobj",
 					"numinlets" : 1,
 					"numoutlets" : 1,
 					"outlettype" : [ "" ],
-					"patching_rect" : [ 444.0, 25.0, 70.0, 22.0 ],
+					"patching_rect" : [ 234.0, 34.0, 70.0, 22.0 ],
 					"text" : "loadmess 1"
 				}
 
@@ -93,7 +82,7 @@
 					"numinlets" : 1,
 					"numoutlets" : 1,
 					"outlettype" : [ "bang" ],
-					"patching_rect" : [ 444.0, 60.0, 117.0, 22.0 ],
+					"patching_rect" : [ 234.0, 69.0, 117.0, 22.0 ],
 					"text" : "filewatch dyn_gl.cpp"
 				}
 
@@ -152,7 +141,7 @@
 					"maxclass" : "comment",
 					"numinlets" : 1,
 					"numoutlets" : 0,
-					"patching_rect" : [ 447.0, 157.0, 366.0, 234.0 ],
+					"patching_rect" : [ 385.0, 211.0, 366.0, 234.0 ],
 					"text" : "TODO\n\nWorks on Windows, except for the annoying thing of holding onto the dll; so unload is needed before recompiling\n(which makes a good argument for using a shell external in Max)\n\nadd a better plugin interface\ncall library's init(), return some state object (perhaps with handlers embedded), could even be a t_object if we want.\n\nmultiple instances: dlopen/close is playing well, but our instances aren't -- if one unloads() it can mess up another -- need some refcounting\n\ndynlet\n\ndynattr"
 				}
 
@@ -231,16 +220,7 @@
  ],
 		"lines" : [ 			{
 				"patchline" : 				{
-					"destination" : [ "obj-13", 0 ],
-					"order" : 0,
-					"source" : [ "obj-11", 0 ]
-				}
-
-			}
-, 			{
-				"patchline" : 				{
 					"destination" : [ "obj-5", 0 ],
-					"order" : 1,
 					"source" : [ "obj-11", 0 ]
 				}
 
@@ -343,8 +323,8 @@
 			}
  ],
 		"dependency_cache" : [ 			{
-				"name" : "dyn.mxe64",
-				"type" : "mx64"
+				"name" : "dyn.mxo",
+				"type" : "iLaX"
 			}
  ],
 		"autosave" : 0

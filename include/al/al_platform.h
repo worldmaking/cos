@@ -28,7 +28,11 @@
     #define AL_OSX
     #define AL_EXPORT
     #define AL_ALICE_EXPORT
+
+    #include <Carbon/Carbon.h>
 #endif
+
+#include <stddef.h>
 
 bool isPlatformWindows() {
     #ifdef AL_WIN

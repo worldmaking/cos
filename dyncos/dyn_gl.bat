@@ -30,6 +30,6 @@ cl /nologo /EHsc /D "WIN_VERSION" /D "WIN64" /D "NDEBUG" /O2 "%INNAME%.cpp" /Fe:
 rem cl /nologo /EHsc /D "WIN_VERSION" /D "WIN64" /D "NDEBUG" /O2 "%INNAME%.cpp" /Fe: "%OUTNAME%.dll" /I "%cd%\\..\\include" /I "%cd%\\..\\include\\al" /I "%MAXSDK%\\source\\c74support\\max-includes\\" /I "%MAXSDK%\\source\\c74support\\msp-includes\\" /I "%MAXSDK%\\source\\c74support\\jit-includes\\" /link /DLL /MACHINE:X64 "%MAXSDK%\\source\\c74support\\max-includes\\x64\\MaxAPI.lib" "%MAXSDK%\\source\\c74support\\msp-includes\\x64\\MaxAudio.lib" "%MAXSDK%\\source\\c74support\\jit-includes\\x64\\jitlib.lib" /WHOLEARCHIVE:"%cd%\\..\\lib\\win64\\lib-vc2017\\glfw3.lib" user32.lib kernel32.lib shell32.lib shlwapi.lib gdi32.lib advapi32.lib iphlpapi.lib ole32.lib oleaut32.lib odbc32.lib odbccp32.lib psapi.lib userenv.lib uuid.lib winspool.lib comdlg32.lib ws2_32.lib opengl32.lib
 
 rem couldn't find a way to stop cl.exe from generating these, so clean up after
-del "%INNAME%.obj" "%INNAME%.exp" "%INNAME%.lib"
+del "%INNAME%.obj" "%INNAME%.x64.exp" "%INNAME%.lib"
 
 echo ok
