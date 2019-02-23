@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<style>
+* {
+  margin: 0px;
+  border: 0;
+}
+
+html,
+body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden; /*  Disable scrollbars */
+  display: block; /* No floating content on sides */
+  font-family: monospace; /* use fixed-width fonts by default */
+  -webkit-font-smoothing: antialiased;
+  font-smoothing: antialiased;
+
+  background: #000;
+  color: #fff;
+}
+
+#overlay {
+	position: absolute;
+    left: 0px;
+    top: 0px;
+	width: 100%;
+	height: 100%;
+    z-index: 1;
+    pointer-events: none;
+    /* display: none; */
+}
+
+</style>
+<body>
+	<script src="libs/gl-matrix-min.js"></script>  
+	<script src="libs/screenfull.js"></script>  
+	<script src="libs/utils.js"></script>
+	<script src="libs/socket.js"></script> 
+	<script src="libs/webutils.js"></script>   
+<!-- 
+<script src="libs/glutils.js"></script> -->
+<!-- <script>
+if (webutils.getQueryStringParamterByName("mouse") == "0" || webutils.getQueryStringParamterByName("mouse") == "off") {
+    makeStyleSheet("* { cursor: none; }");
+}
+</script> -->
+<script src="main.js"></script>
+</body>
+</html>
