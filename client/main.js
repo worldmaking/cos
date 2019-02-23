@@ -1,50 +1,6 @@
 /* global: mat4, vec3, VRCubeIsland, WGLUDebugGeometry, WGLUStats, WGLUTextureLoader, VRSamplesUtil */
 
-/// socket stuff
 
-let received = 0;
-let rxAvg = 0;
-
-let sock
-try {
-	if (window.location.hostname == "localhost") {
-		sock = new Socket({
-			reload_on_disconnect: false,
-			onopen: function() {
-				//this.send({ cmd: "getdata", date: Date.now() });
-			},
-			onmessage: function(msg) { 
-				print("received", msg);
-			},
-			onbuffer(data, byteLength) {
-				received += byteLength;
-				rxAvg += 0.1*(byteLength - rxAvg);
-
-				let rx = new Uint8Array(data);
-				//console.log(rx[rx.length-1]);
-
-				
-				//console.log("received arraybuffer of " + byteLength + " bytes");
-				//console.log(agentsVao.positions.byteLength + agentsVao.colors.byteLength + linesVao.indices.byteLength);
-				//console.log(data)
-				// copy to agentsVao:
-				//let fa = new Float32Array(data);
-				//agentsVao.positions = fa.subarray(0, NUM_AGENTS*2);
-				//agentsVao.positions.set(fa);
-
-				// agentsVao.positions = new Float32Array(data, 0, NUM_AGENTS*2);
-				// agentsVao.colors = new Float32Array(data, agentsVao.positions.byteLength, NUM_AGENTS*4);
-				// linesVao.indices = new Uint16Array(data, agentsVao.colors.byteLength + agentsVao.colors.byteOffset, MAX_LINE_POINTS);
-
-				// dirty = true;
-
-				//console.log(utils.pick(linesVao.indices));
-			},
-		});
-	}
-} catch (e) {
-	console.error(e);
-}
 
 
 // ===================================================
@@ -86,7 +42,7 @@ for (let z=0, i=0; z<DIM; z++) {
       let pos = vec3.fromValues(x, y, z);
       field.locations.set(pos, i * 3);
       
-      let p = vec3.random(vec3.create(), 1.);
+      let p = vec3.fromValues(0, 1, 0); //vec3.random(vec3.create(), 1.);
       let val = vec4.fromValues(p[0], p[1], p[2], Math.random());
       field.intensities.set(val, i * 4);
     } 
@@ -829,7 +785,7 @@ function draw() {
   // gl.useProgram(null);
   
   
-  if (1) {
+  if (0) {
     gl.useProgram(field.program);
     gl.uniformMatrix4fv(field.u_modelmatrix_loc, false, field_matrix);
     gl.uniformMatrix4fv(field.u_viewmatrix_loc, false, view_matrix);
@@ -882,3 +838,60 @@ function draw() {
   gl.depthMask(true);
 }
 
+/////////////////////
+
+
+/// socket stuff
+
+let received = 0;
+let rxAvg = 0;
+
+let sock
+try {
+	if (window.location.hostname == "localhost") {
+		sock = new Socket({
+			reload_on_disconnect: false,
+			onopen: function() {
+				//this.send({ cmd: "getdata", date: Date.now() });
+			},
+			onmessage: function(msg) { 
+				print("received", msg);
+			},
+			onbuffer(data, byteLength) {
+				received += byteLength;
+				rxAvg += 0.1*(byteLength - rxAvg);
+				let rx = new Float32Array(data);
+				field.intensities.set(rx);
+
+				if (Math.random() < 0.01) {
+					console.log(data.byteLength, field.intensities.byteLength, rx.byteLength)
+					
+					console.log(rx[rx.length-3])
+					console.log(field.intensities[field.intensities.length-3])
+				}
+
+				//let rx = new Uint8Array(data);
+				//console.log(rx[rx.length-1]);
+
+				
+				//console.log("received arraybuffer of " + byteLength + " bytes");
+				//console.log(agentsVao.positions.byteLength + agentsVao.colors.byteLength + linesVao.indices.byteLength);
+				//console.log(data)
+				// copy to agentsVao:
+				//let fa = new Float32Array(data);
+				//agentsVao.positions = fa.subarray(0, NUM_AGENTS*2);
+				//agentsVao.positions.set(fa);
+
+				// agentsVao.positions = new Float32Array(data, 0, NUM_AGENTS*2);
+				// agentsVao.colors = new Float32Array(data, agentsVao.positions.byteLength, NUM_AGENTS*4);
+				// linesVao.indices = new Uint16Array(data, agentsVao.colors.byteLength + agentsVao.colors.byteOffset, MAX_LINE_POINTS);
+
+				// dirty = true;
+
+				//console.log(utils.pick(linesVao.indices));
+			},
+		});
+	}
+} catch (e) {
+	console.error(e);
+}

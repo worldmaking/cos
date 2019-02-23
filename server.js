@@ -93,7 +93,7 @@ const { exec, execSync, spawn, spawnSync, fork } = require('child_process');
 const express = require('express');
 const WebSocket = require('ws');
 const PNG = require("pngjs").PNG;
-const { vec2, vec3 } = require("gl-matrix");
+const { vec2, vec3, vec4, quat, mat3, mat4 } = require("gl-matrix");
 
 const project_path = process.cwd();
 const server_path = __dirname;
@@ -123,6 +123,27 @@ console.log("client_path", client_path);
 	// write the key to stdout all normal like
 	process.stdout.write( key );
 	});
+}
+
+////////////////////////
+
+// raw data:
+const DIM = 32;
+const DIM3 = DIM*DIM*DIM;
+let field = new Float32Array(DIM3 * 4);
+
+function updateField() {
+	for (let z=0, i=0; z<DIM; z++) { 
+		for (let y=0; y<DIM; y++) { 
+			for (let x=0; x<DIM; x++, i++) {
+			let pos = vec3.fromValues(x, y, z);
+			
+			let p = vec3.random(vec3.create(), 1.);
+			let val = vec4.fromValues(p[0], p[1], p[2], Math.random());
+			field.set(val, i * 4);
+			} 
+		} 
+	}
 }
 
 ////////////////////////
@@ -162,20 +183,14 @@ wss.on('connection', function(ws, req) {
 
 	let t0=performance.now()*0.001;
 	let fpsAvg = 60;
-	let arrays = [];
-	for (let i=0; i<3; i++) {
-		let array = new Uint8Array(1024*1024); // 1mb
-		array[0] = 255;
-		array[array.length-1] = i;
-		arrays.push(array);
-	}
-	console.log(arrays[0].length);
+	console.log(field.byteLength );
 		
 	let stream = setInterval(function() {
 		if(!ws) return;
-		for (let a of arrays) {
-			ws.send(a);
-		}
+
+		updateField();
+
+		ws.send(field);
 
 		let t = performance.now()*0.001;
 		let dt = t-t0;
