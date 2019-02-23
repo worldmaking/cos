@@ -104,7 +104,7 @@ Geometry makeCube() {
 
 Geometry cubeGeometry = makeCube();
 
-const int POPULATION_SIZE = 500;
+const int POPULATION_SIZE = 20000;
 
 const char * const VERTEX_CODE = R"(
 #version 300 es
@@ -456,7 +456,7 @@ struct World {
 			wv = quat_rotate(a.orient, wv);
 			a.pos += wv; 
 			// bounds:
-			if (glm::length(a.pos) > 20.f) {
+			if (glm::length(a.pos) > 40.f) {
 				a.pos = glm::vec3(0, 0, 0);
 			}
 		}
@@ -555,14 +555,14 @@ struct World {
 		updateBuffers();
 	}
 
-	void update() {
+	void update(int width, int height) {
 		float t = glfwGetTime() * 0.001;
 		float dt = 1/60.f; // TODO
 		updateAgents(dt);
 
 		// set up view and perspective matrices:
 		float fovy = PI * 0.25;
-		float aspect = 1.33f; //canvas.clientWidth / canvas.clientHeight;
+		float aspect = width / (float)height;
 		glm::mat4 perspectivematrix = glm::perspective(fovy, aspect, 0.01f, 100.f);
 		glm::vec3 target = glm::vec3(0, 0, 0);
 		float t1 = t * 0.1;

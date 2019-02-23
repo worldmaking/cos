@@ -19,6 +19,8 @@ struct Instance {
 	Instance(t_object * host) : host(host) {
 		object_post(host, "hello from dynamic instance %p", this);
         
+		window.width = 1600;
+		window.height = 840;
         window.open();
 
 		world.reset();
@@ -36,7 +38,7 @@ struct Instance {
         glClearColor(0.f, 0.f, 0.f, 1.0f);
 	    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-		world.update();
+		world.update(window.width, window.height);
 
         glfwSwapBuffers(window.pointer);
     }
