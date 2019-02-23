@@ -471,3 +471,160 @@ void main() {
     if (uniforms) self.setuniforms(uniforms);
     return self;
 }
+
+function makeCube() {
+    return {
+      vertices: new Float32Array([
+        // front
+        -1.0, -1.0,  1.0,
+         1.0, -1.0,  1.0,
+         1.0,  1.0,  1.0,
+        -1.0,  1.0,  1.0,
+  
+        // back
+        -1.0, -1.0, -1.0,
+        -1.0,  1.0, -1.0,
+         1.0,  1.0, -1.0,
+         1.0, -1.0, -1.0,
+  
+        // upside
+        -1.0,  1.0, -1.0,
+        -1.0,  1.0,  1.0,
+         1.0,  1.0,  1.0,
+         1.0,  1.0, -1.0,
+  
+        // downslide
+        -1.0, -1.0, -1.0,
+         1.0, -1.0, -1.0,
+         1.0, -1.0,  1.0,
+        -1.0, -1.0,  1.0,
+  
+        // right
+         1.0, -1.0, -1.0,
+         1.0,  1.0, -1.0,
+         1.0,  1.0,  1.0,
+         1.0, -1.0,  1.0,
+  
+        // left
+        -1.0, -1.0, -1.0,
+        -1.0, -1.0,  1.0,
+        -1.0,  1.0,  1.0,
+        -1.0,  1.0, -1.0
+      ]),
+      normals: new Float32Array([
+          // front
+         0.0,  0.0,  1.0,
+         0.0,  0.0,  1.0,
+         0.0,  0.0,  1.0,
+         0.0,  0.0,  1.0,
+  
+        // back
+         0.0,  0.0, -1.0,
+         0.0,  0.0, -1.0,
+         0.0,  0.0, -1.0,
+         0.0,  0.0, -1.0,
+  
+        // upside
+         0.0,  1.0,  0.0,
+         0.0,  1.0,  0.0,
+         0.0,  1.0,  0.0,
+         0.0,  1.0,  0.0,
+  
+        // downside
+         0.0, -1.0,  0.0,
+         0.0, -1.0,  0.0,
+         0.0, -1.0,  0.0,
+         0.0, -1.0,  0.0,
+  
+        // right
+         1.0,  0.0,  0.0,
+         1.0,  0.0,  0.0,
+         1.0,  0.0,  0.0,
+         1.0,  0.0,  0.0,
+  
+        // left
+        -1.0,  0.0,  0.0,
+        -1.0,  0.0,  0.0,
+        -1.0,  0.0,  0.0,
+        -1.0,  0.0,  0.0,
+      ]),
+      indices: new Uint16Array([
+        0, 1, 2,
+        2, 3, 0,
+   
+        4, 5, 6,
+        6, 7, 4,
+        
+        8, 9, 10,
+        10, 11, 8,
+        
+        12, 13, 14, 
+        14, 15, 12,
+        
+        16, 17, 18,
+        18, 19, 16,
+        
+        20, 21, 22,
+        22, 23, 20,
+      ]),
+    }
+  }
+    
+    //	q must be a normalized quaternion
+  function quat_rotate(out, q, v) {
+    let p = vec4.fromValues(
+      q[3] * v[0] + q[1] * v[2] - q[2] * v[1], // x
+      q[3] * v[1] + q[2] * v[0] - q[0] * v[2], // y
+      q[3] * v[2] + q[0] * v[1] - q[1] * v[0], // z
+      -q[0] * v[0] - q[1] * v[1] - q[2] * v[2] // w
+    );
+    return vec3.set(
+      out,
+      p[0] * q[3] - p[3] * q[0] + p[2] * q[1] - p[1] * q[2], // x
+      p[1] * q[3] - p[3] * q[1] + p[0] * q[2] - p[2] * q[0], // y
+      p[2] * q[3] - p[3] * q[2] + p[1] * q[0] - p[0] * q[1] // z
+    );
+  }
+  
+  // equiv. quat_rotate(quat_conj(q), v):
+  // q must be a normalized quaternion
+  function quat_unrotate(out, q, v) {
+    // return quat_mul(quat_mul(quat_conj(q), vec4(v, 0)), q)[0]yz;
+    // reduced:
+    let p = vec4.fromValues(
+      q[3] * v[0] - q[1] * v[2] + q[2] * v[1], // x
+      q[3] * v[1] - q[2] * v[0] + q[0] * v[2], // y
+      q[3] * v[2] - q[0] * v[1] + q[1] * v[0], // z
+      q[0] * v[0] + q[1] * v[1] + q[2] * v[2] // w
+    );
+    return vec3.set(
+      out,
+      p[3] * q[0] + p[0] * q[3] + p[1] * q[2] - p[2] * q[1], // x
+      p[3] * q[1] + p[1] * q[3] + p[2] * q[0] - p[0] * q[2], // y
+      p[3] * q[2] + p[2] * q[3] + p[0] * q[1] - p[1] * q[0] // z
+    );
+  }
+    
+  function createCheckerTexture(gl, texSize = 8) 
+  {
+    let texture = gl.createTexture();
+    gl.bindTexture( gl.TEXTURE_2D, texture );
+    let texData = new Uint8Array(texSize * texSize * 4);
+    for (let i=0; i<texSize; i++) {
+      for (let j=0; j<texSize; j++) {
+        let idx = (i*texSize + j) * 4;
+        let val = 255 * ((i + j) % 2);
+        texData[idx+0] = val;
+        texData[idx+1] = val;
+        texData[idx+2] = val;
+        texData[idx+3] = 255;
+      }
+    }
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, texSize, texSize, 0, gl.RGBA, gl.UNSIGNED_BYTE, texData);
+    gl.generateMipmap( gl.TEXTURE_2D );
+    gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST_MIPMAP_LINEAR );
+    gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    return texture;
+  }

@@ -3,23 +3,28 @@
 <head>
 <meta charset="utf-8">
 <style>
-* {
+html,body {
   margin: 0px;
-  border: 0;
+  padding: 0px;
+  overflow: none;
+}
+canvas {
+  margin: 0px;
+  padding: 0px;
+  width: 100%; height: 100%;
+  position: absolute;
+  left: 0px;
+  top: 0px;
 }
 
-html,
-body {
-  width: 100%;
-  height: 100%;
-  overflow: hidden; /*  Disable scrollbars */
-  display: block; /* No floating content on sides */
-  font-family: monospace; /* use fixed-width fonts by default */
-  -webkit-font-smoothing: antialiased;
-  font-smoothing: antialiased;
-
-  background: #000;
+#log {
+  position: absolute;
+  top: 0px; right: 0px;
+  margin: 0px;
+  padding: 10px;
   color: #fff;
+  background-color: hsla(50, 0%, 10%, .75);
+  z-index: 10;
 }
 
 #overlay {
@@ -30,18 +35,31 @@ body {
 	height: 100%;
     z-index: 1;
     pointer-events: none;
+    color: #fff;
+    background-color: hsla(50, 0%, 10%, .75);
     /* display: none; */
 }
 
 </style>
 <body>
-	<script src="libs/gl-matrix-min.js"></script>  
-	<script src="libs/screenfull.js"></script>  
-	<script src="libs/utils.js"></script>
-	<script src="libs/socket.js"></script> 
-	<script src="libs/webutils.js"></script>   
-<!-- 
-<script src="libs/glutils.js"></script> -->
+<canvas id="webgl-canvas"></canvas>
+<div id="log">log</div>
+
+<script src="libs/gl-matrix-min.js"></script>  
+<script src="libs/screenfull.js"></script>  
+<script src="libs/utils.js"></script>
+<script src="libs/socket.js"></script> 
+<script src="libs/webutils.js"></script> 
+    
+<script src="libs/glutils.js"></script>
+<script src="libs/wglu-debug-geometry.js"></script>
+<script src="libs/wglu-program.js"></script>
+<script src="libs/wglu-stats.js"></script>
+<script src="libs/wglu-texture.js"></script>
+<script src="libs/vr-cube-island.js"></script>
+<script src="libs/vr-samples-util.js"></script>
+<script src="libs/vr-wrapper.js"></script>
+
 <!-- <script>
 if (webutils.getQueryStringParamterByName("mouse") == "0" || webutils.getQueryStringParamterByName("mouse") == "off") {
     makeStyleSheet("* { cursor: none; }");
