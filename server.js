@@ -60,13 +60,19 @@
 	If a point cloud surface intersects a voxel, there could be over 200 points in it. However most voxels will be empty. 
 	This can also be quite noisy, and may need some temporal smoothing
 	Can use this to construct a density field. 
-	Get gradient of density field.
 
-	Divergence as the change in density per frame. 
+	Get gradient of density field.
+	- just the 
+	- direction gives the fluid direction at this point
+	- length gives the ?
+
+	Divergence as the change in v per frame. 
+	= sum of density derivatives in each axis (dot product)
 
 	Note: incompressible fluids have div = 0 everywhere. This is not what we have here!
 
 	Curl is rotation around point
+	= cross product of axis derivatives with field 
 
 
 
