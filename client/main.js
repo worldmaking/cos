@@ -233,12 +233,11 @@ gl.bindVertexArray(field.vao);
 }
 gl.bindVertexArray(null);
 
-let population_size = 3000;
+let population_size = 4096;
 let agents = [];
 
-let locations = new Float32Array(population_size * 3);
-let orientations = new Float32Array(population_size * 4);
-let properties = new Float32Array(population_size * 4);
+let agent_attrib_count = 12; // 3x vec4
+let agent_attribs = new Float32Array(population_size * agent_attrib_count);
 
 function reset() {
 
@@ -292,7 +291,7 @@ uniform mat3 u_viewmatrix_inverse;
 uniform float u_time;
 in vec3 a_position;
 in vec3 a_normal;
-in vec3 a_location;
+in vec4 a_location;
 in vec4 a_orientation;
 in vec4 a_properties;
 out vec3 normal, eyepos, ray_origin, ray_direction;
@@ -342,7 +341,7 @@ void main() {
 	vec3 vertex = a_position;
   //vertex = u_viewmatrix_inverse * vertex; 
   
-  world_vertex = quat_rotate(a_orientation, vertex * scale) + a_location;
+  world_vertex = quat_rotate(a_orientation, vertex * scale) + a_location.xyz;
   world_orientation = a_orientation;
 
   // rotate to face camera:
@@ -533,16 +532,16 @@ float map(vec3 p) {
   float t1 = (cos(time * -TWOPI)*0.5+0.5);
   float t2 = (sin(time * -TWOPI)*0.5+0.5);
   float s = fSphere(p, t1);
-  float s1 = fSphere(p+vec3(0, 0.3, 0), t1*0.7);
-  float s2 = fSphere(p-+vec3(0, 0.3, 0), t2*0.7);
+  float s1 = fSphere(p+vec3(0, 0, 0.3), t1*0.7);
+  float s2 = fSphere(p-+vec3(0, 0, 0.3), t2*0.7);
   float c = fCylinder(p, 0.2, 1.);
   float b = fBox(p, vec3(0.5, 1., 0.1));
   float sc = smin(s, c, 0.2);
   float cb = smin(c, b, 0.2);
   float bs = smin(b, s, 0.2);
 
-  vec3 A = vec3(0, 0.7, 0);
-  vec3 B = vec3(0, -0.7, 0);
+  vec3 A = vec3(0, 0, 0.7);
+  vec3 B = vec3(0, 0, -0.7);
   float C = sdCapsule1(p, A, B, 0.3);
 
   float ss = smin(s1, s2, 0.3);
@@ -670,9 +669,12 @@ let vao = gl.createVertexArray();
 let vertex_buf = gl.createBuffer();
 let normal_buf = gl.createBuffer();
 let index_buf = gl.createBuffer();
+
 let location_buf = gl.createBuffer();
 let orientation_buf = gl.createBuffer();
 let property_buf = gl.createBuffer();
+
+let attribs_buf = gl.createBuffer();
 gl.bindVertexArray(vao);
 {
   gl.bindBuffer(gl.ARRAY_BUFFER, vertex_buf);
@@ -681,33 +683,6 @@ gl.bindVertexArray(vao);
   gl.enableVertexAttribArray(positionAttributeLocation);
   gl.bindBuffer(gl.ARRAY_BUFFER, vertex_buf);
   gl.vertexAttribPointer(positionAttributeLocation, 3, gl.FLOAT, false, 0, 0);
-  gl.bindBuffer(gl.ARRAY_BUFFER, null);
-
-  gl.bindBuffer(gl.ARRAY_BUFFER, location_buf);
-  gl.bufferData(gl.ARRAY_BUFFER, locations, gl.DYNAMIC_DRAW);
-  let locationAttributeLocation = gl.getAttribLocation(program, "a_location");
-  gl.enableVertexAttribArray(locationAttributeLocation);
-  gl.bindBuffer(gl.ARRAY_BUFFER, location_buf);
-  gl.vertexAttribPointer(locationAttributeLocation, 3, gl.FLOAT, false, 0, 0);
-  gl.vertexAttribDivisor(locationAttributeLocation, 1);
-  gl.bindBuffer(gl.ARRAY_BUFFER, null);
-
-  gl.bindBuffer(gl.ARRAY_BUFFER, orientation_buf);
-  gl.bufferData(gl.ARRAY_BUFFER, orientations, gl.DYNAMIC_DRAW);
-  let orientationAttributeLocation = gl.getAttribLocation(program, "a_orientation");
-  gl.enableVertexAttribArray(orientationAttributeLocation);
-  gl.bindBuffer(gl.ARRAY_BUFFER, orientation_buf);
-  gl.vertexAttribPointer(orientationAttributeLocation, 4, gl.FLOAT, false, 0, 0);
-  gl.vertexAttribDivisor(orientationAttributeLocation, 1);
-  gl.bindBuffer(gl.ARRAY_BUFFER, null);
-
-  gl.bindBuffer(gl.ARRAY_BUFFER, property_buf);
-  gl.bufferData(gl.ARRAY_BUFFER, properties, gl.DYNAMIC_DRAW);
-  let propertyAttributeLocation = gl.getAttribLocation(program, "a_properties");
-  gl.enableVertexAttribArray(propertyAttributeLocation);
-  gl.bindBuffer(gl.ARRAY_BUFFER, property_buf);
-  gl.vertexAttribPointer(propertyAttributeLocation, 4, gl.FLOAT, false, 0, 0);
-  gl.vertexAttribDivisor(propertyAttributeLocation, 1);
   gl.bindBuffer(gl.ARRAY_BUFFER, null);
 
   gl.bindBuffer(gl.ARRAY_BUFFER, normal_buf);
@@ -720,29 +695,50 @@ gl.bindVertexArray(vao);
 
   gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, index_buf);
   gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, cube.indices, gl.STATIC_DRAW);
+
+  // instance data:
+  gl.bindBuffer(gl.ARRAY_BUFFER, attribs_buf);
+  gl.bufferData(gl.ARRAY_BUFFER, agent_attribs, gl.DYNAMIC_DRAW);
+  {
+    let attrLoc = gl.getAttribLocation(program, "a_location");
+    gl.enableVertexAttribArray(attrLoc);
+    gl.vertexAttribPointer(attrLoc, 4, gl.FLOAT, false, agent_attrib_count*4, 0*4);
+    gl.vertexAttribDivisor(attrLoc, 1);
+  }
+  {
+    let attrLoc = gl.getAttribLocation(program, "a_orientation");
+    gl.enableVertexAttribArray(attrLoc);
+    gl.vertexAttribPointer(attrLoc, 4, gl.FLOAT, false, agent_attrib_count*4, 4*4);
+    gl.vertexAttribDivisor(attrLoc, 1);
+  }
+  {
+    let attrLoc = gl.getAttribLocation(program, "a_properties");
+    gl.enableVertexAttribArray(attrLoc);
+    gl.vertexAttribPointer(attrLoc, 4, gl.FLOAT, false, agent_attrib_count*4, 8*4);
+    gl.vertexAttribDivisor(attrLoc, 1);
+  }
+  gl.bindBuffer(gl.ARRAY_BUFFER, null);
 }
 gl.bindVertexArray(null);
 
+let once = 1
 function updateBuffers() {
-  for (let i in agents) {
-    let a = agents[i];
-    locations.set(a.pos, i * 3);
-    orientations.set(a.orient, i * 4);
+  if (0) {
+    for (let i in agents) {
+      let a = agents[i];
+      let props = [a.phase, 0, 0, a.size];
 
-    let props = [a.phase, 0, 0, a.size];
-    properties.set(props, i * 4);
-
+      agent_attribs.set(a.pos, i*agent_attrib_count);
+      agent_attribs.set(a.orient, i*agent_attrib_count + 4);
+      agent_attribs.set(props, i*agent_attrib_count + 8);
+    }
   }
-  
+
   gl.bindBuffer(gl.ARRAY_BUFFER, field.intensity_buf);
   gl.bufferData(gl.ARRAY_BUFFER, field.intensities, gl.DYNAMIC_DRAW);
 
-  gl.bindBuffer(gl.ARRAY_BUFFER, location_buf);
-  gl.bufferData(gl.ARRAY_BUFFER, locations, gl.DYNAMIC_DRAW);
-  gl.bindBuffer(gl.ARRAY_BUFFER, orientation_buf);
-  gl.bufferData(gl.ARRAY_BUFFER, orientations, gl.DYNAMIC_DRAW);
-  gl.bindBuffer(gl.ARRAY_BUFFER, property_buf);
-  gl.bufferData(gl.ARRAY_BUFFER, properties, gl.DYNAMIC_DRAW);
+  gl.bindBuffer(gl.ARRAY_BUFFER, attribs_buf);
+  gl.bufferData(gl.ARRAY_BUFFER, agent_attribs, gl.DYNAMIC_DRAW);
 }
 updateBuffers();
 
@@ -763,6 +759,8 @@ function update() {
 }
 
 function draw() {
+  vr.cubeIsland.render(vr.projectionMat, vr.viewMat, vr.stats);
+
   let perspective_matrix = vr.projectionMat;
   let view_matrix = vr.viewMat;
   let view3 = mat3.fromMat4(mat3.create(), view_matrix);
@@ -783,6 +781,9 @@ function draw() {
   // );
   // gl.bindVertexArray(null);
   // gl.useProgram(null);
+
+  
+      
   
   
   if (0) {
@@ -819,14 +820,8 @@ function draw() {
     gl.uniformMatrix3fv(u_viewmatrix_inverse_loc, false, view_matrix_inverse);
     gl.uniformMatrix4fv(u_perspectivematrix_loc, false, perspective_matrix);
     gl.bindVertexArray(vao);
-    let instanceCount = locations.length / 3;
-    gl.drawElementsInstanced(
-      gl.TRIANGLES,
-      cube.indices.length,
-      gl.UNSIGNED_SHORT,
-      0,
-      instanceCount
-    );
+    let instanceCount = agent_attribs.length / agent_attrib_count; 
+    gl.drawElementsInstanced(gl.TRIANGLES, cube.indices.length, gl.UNSIGNED_SHORT, 0, instanceCount);
     gl.bindVertexArray(null);
     gl.useProgram(null);
   }
@@ -845,12 +840,13 @@ function draw() {
 
 let received = 0;
 let rxAvg = 0;
-
 let sock
 try {
 	if (window.location.hostname == "localhost") {
+    
+let once = 1;
 		sock = new Socket({
-			reload_on_disconnect: false,
+			reload_on_disconnect: true,
 			onopen: function() {
 				//this.send({ cmd: "getdata", date: Date.now() });
 			},
@@ -858,17 +854,19 @@ try {
 				print("received", msg);
 			},
 			onbuffer(data, byteLength) {
+        console.log (byteLength , agent_attribs.byteLength);
 				received += byteLength;
 				rxAvg += 0.1*(byteLength - rxAvg);
 				let rx = new Float32Array(data);
-				//field.intensities.set(rx);
+        //field.intensities.set(rx);
+        agent_attribs.set(rx);
 
-				if (Math.random() < 0.01) {
-					console.log(data.byteLength, field.intensities.byteLength, rx.byteLength)
-					
-					console.log(rx[rx.length-3])
-					console.log(field.intensities[field.intensities.length-3])
-				}
+				
+        if (once) {
+          console.log(agent_attribs)
+          once = 0
+        }
+  
 
 				//let rx = new Uint8Array(data);
 				//console.log(rx[rx.length-1]);

@@ -151,9 +151,6 @@ let vr = {
     },
     
     renderSceneView: function() {
-      this.cubeIsland.render(this.projectionMat, this.viewMat, this.stats);
-  
-      /// 
       if (draw) draw(this);
     }
   };
