@@ -78,6 +78,20 @@
 
 	(beware that voxels below surface may be 'shadowed' and thus unkown)
 
+
+	# Getting Kinect data to client
+
+	Right now we have Kinect data in Max, as jitter matrices.
+	To get this to server, either:
+	- write jit matrix handlers for [ws] or [ws.client] to send as arraybuffers
+		- https://github.com/zaphoyd/websocketpp/issues/572
+		- https://github.com/zaphoyd/websocketpp/issues/575
+		- it doesn't include any type info, just a raw binary
+		- also may need to deal with network byte order etc., packing, etc.
+	- Don't use Max: port the Kinect handling code over to a node binary module
+		- lose the ability to live patch the configuration
+
+
 */
 
 const http = require('http');
