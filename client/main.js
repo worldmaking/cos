@@ -861,7 +861,7 @@ try {
 				received += byteLength;
 				rxAvg += 0.1*(byteLength - rxAvg);
 				let rx = new Float32Array(data);
-				field.intensities.set(rx);
+				//field.intensities.set(rx);
 
 				if (Math.random() < 0.01) {
 					console.log(data.byteLength, field.intensities.byteLength, rx.byteLength)

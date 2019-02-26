@@ -95,6 +95,9 @@ const WebSocket = require('ws');
 const PNG = require("pngjs").PNG;
 const { vec2, vec3, vec4, quat, mat3, mat4 } = require("gl-matrix");
 
+const an = require('./source/build/Release/an');
+an.init();
+
 const project_path = process.cwd();
 const server_path = __dirname;
 const client_path = path.join(server_path, "client");
@@ -181,25 +184,9 @@ wss.on('connection', function(ws, req) {
     //console.log("ws", ws)
 	//console.log("req", req)
 
-	let t0=performance.now()*0.001;
-	let fpsAvg = 60;
-	console.log(field.byteLength );
+	
 		
-	let stream = setInterval(function() {
-		if(!ws) return;
-
-		updateField();
-
-		ws.send(field);
-
-		let t = performance.now()*0.001;
-		let dt = t-t0;
-		t0 = t;
-		let fps = 1/dt;
-		fpsAvg += 0.1*(fps-fpsAvg);
-		if (Math.random() < 0.01) console.log("fps ", fpsAvg, " at ", t);
-
-	}, 1000/60);
+	
 
 	console.log("server received a connection");
 	console.log("server has "+wss.clients.size+" connected clients");
@@ -280,3 +267,23 @@ server.listen(8080, function() {
 	console.log(`server listening`);
 	console.log(`main view on http://localhost:${server.address().port}/index.html`);
 });
+
+let t0=performance.now()*0.001;
+let fpsAvg = 60;
+console.log(field.byteLength );
+let stream = setInterval(function() {
+	let t = performance.now()*0.001;
+	let dt = t-t0;
+	t0 = t;
+	let fps = 1/dt;
+	fpsAvg += 0.1*(fps-fpsAvg);
+
+	//updateField();
+	let buf = an.update(dt);
+
+	//ws.send(field);
+	send_all_clients(buf);
+
+	if (Math.random() < 0.01) console.log("fps ", fpsAvg, " at ", t);
+
+}, 1000/60);

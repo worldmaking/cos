@@ -264,6 +264,7 @@ let vr = {
       }
     } else {
       window.requestAnimationFrame(onAnimationFrame);
+
       // No VRDisplay found.
       gl.viewport(0, 0, vr.canvas.width, vr.canvas.height);
       gl.enable(gl.DEPTH_TEST);
@@ -276,7 +277,8 @@ let vr = {
       );
       mat4.identity(vr.viewMat);
       mat4.translate(vr.viewMat, vr.viewMat, [0, -vr.PLAYER_HEIGHT, 0]);
-      vr.cubeIsland.render(vr.projectionMat, vr.viewMat, vr.stats);
+      //vr.cubeIsland.render(vr.projectionMat, vr.viewMat, vr.stats);
+      vr.renderSceneView();
       vr.stats.renderOrtho();
     }
     vr.stats.end();
