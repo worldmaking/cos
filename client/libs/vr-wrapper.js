@@ -8,6 +8,8 @@ let vr = {
     PresentButton: null,
     stats: null,
     cubeIsland: null,
+
+    showStats: true,
     
     projectionMat: mat4.create(),
     viewMat: mat4.create(),
@@ -223,7 +225,7 @@ let vr = {
   function onAnimationFrame(t) {
     // do not attempt to render if there is no available WebGL context
     if (!gl) return;
-    vr.stats.begin();
+    if (vr.showStats) vr.stats.begin();
   
     if (update) update();
   
@@ -257,7 +259,7 @@ let vr = {
         );
         vr.getStandingViewMatrix(vr.viewMat, vr.frameData.leftViewMatrix);
         vr.renderSceneView();
-        vr.stats.renderOrtho();
+        if (vr.showStats) vr.stats.renderOrtho();
       }
     } else {
       window.requestAnimationFrame(onAnimationFrame);
@@ -276,7 +278,7 @@ let vr = {
       mat4.translate(vr.viewMat, vr.viewMat, [0, -vr.PLAYER_HEIGHT, 0]);
       //vr.cubeIsland.render(vr.projectionMat, vr.viewMat, vr.stats);
       vr.renderSceneView();
-      vr.stats.renderOrtho();
+      if (vr.showStats) vr.stats.renderOrtho();
     }
-    vr.stats.end();
+    if (vr.showStats) vr.stats.end();
   }
