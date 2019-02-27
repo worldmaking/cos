@@ -1,7 +1,7 @@
 /* global: mat4, vec3, VRCubeIsland, WGLUDebugGeometry, WGLUStats, WGLUTextureLoader, VRSamplesUtil */
 
 
-
+let isReceivingData = false;
 
 // ===================================================
 // WebGL scene setup. This code is not WebVR specific.
@@ -10,6 +10,7 @@
 let canvas = document.getElementById("webgl-canvas");
 let gl = canvas.getContext("webgl2", { alpha: false, preserveDrawingBuffer: true, });;
 vr.init(canvas, gl);
+vr.showStats = true;
 
 /////////////////////////
 
@@ -197,7 +198,6 @@ gl.bindVertexArray(field.vao);
   gl.bufferData(gl.ARRAY_BUFFER, cube.vertices, gl.STATIC_DRAW);
   {
     let attrLoc = gl.getAttribLocation(field.program, "a_position");
-    console.log("a_position", attrLoc);
     gl.enableVertexAttribArray(attrLoc);
     gl.bindBuffer(gl.ARRAY_BUFFER, field.vertex_buf);
     gl.vertexAttribPointer(attrLoc, 3, gl.FLOAT, false, 0, 0);
@@ -208,7 +208,6 @@ gl.bindVertexArray(field.vao);
   gl.bufferData(gl.ARRAY_BUFFER, field.locations, gl.STATIC_DRAW);
   {
     let attrLoc = gl.getAttribLocation(field.program, "a_location");
-    console.log("a_location", attrLoc);
     gl.enableVertexAttribArray(attrLoc);
     gl.bindBuffer(gl.ARRAY_BUFFER, field.location_buf);
     gl.vertexAttribPointer(attrLoc, 3, gl.FLOAT, false, 0, 0);
@@ -220,7 +219,6 @@ gl.bindVertexArray(field.vao);
   gl.bufferData(gl.ARRAY_BUFFER, field.intensities, gl.DYNAMIC_DRAW);
   {
     let attrLoc = gl.getAttribLocation(field.program, "a_intensity");
-    console.log("a_intensity", attrLoc);
     gl.enableVertexAttribArray(attrLoc);
     gl.bindBuffer(gl.ARRAY_BUFFER, field.intensity_buf);
     gl.vertexAttribPointer(attrLoc, 4, gl.FLOAT, false, 0, 0);
@@ -257,6 +255,11 @@ function reset() {
     quat.random(a.orient);
     quat.normalize(a.orient, a.orient);
     agents[i] = a;
+
+    let props = [a.phase, 0, 0, a.size];
+    agent_attribs.set(a.pos, i*agent_attrib_count);
+    agent_attribs.set(a.orient, i*agent_attrib_count + 4);
+    agent_attribs.set(props, i*agent_attrib_count + 8);
   }
 }
 reset();
@@ -286,8 +289,9 @@ function updateAgents(dt) {
 let program = makeProgramFromCode(
   gl,
   `#version 300 es
+
+
 uniform mat4 u_viewmatrix, u_perspectivematrix;
-uniform mat3 u_viewmatrix_inverse;
 uniform float u_time;
 in vec3 a_position;
 in vec3 a_normal;
@@ -339,7 +343,6 @@ void main() {
   scale = a_properties.w;
 
 	vec3 vertex = a_position;
-  //vertex = u_viewmatrix_inverse * vertex; 
   
   world_vertex = quat_rotate(a_orientation, vertex * scale) + a_location.xyz;
   world_orientation = a_orientation;
@@ -367,119 +370,15 @@ void main() {
 `,
   `#version 300 es
 precision mediump float;
+
+${fragment_shader_lib}
+
 in vec3 normal, eyepos, ray_origin, ray_direction;
 in float time, scale;
 in vec3 world_vertex;
 in vec4 world_orientation;
 in mat4 viewprojectionmatrix;
 out vec4 outColor;
-
-#define PI 3.141592653589793
-#define TWOPI 3.141592653589793*2.0
-
-// Maximum/minumum elements of a vector
-float vmax(vec2 v) {
-	return max(v.x, v.y);
-}
-
-float vmax(vec3 v) {
-	return max(max(v.x, v.y), v.z);
-}
-
-float vmax(vec4 v) {
-	return max(max(v.x, v.y), max(v.z, v.w));
-}
-
-float vmin(vec2 v) {
-	return min(v.x, v.y);
-}
-
-float vmin(vec3 v) {
-	return min(min(v.x, v.y), v.z);
-}
-
-float vmin(vec4 v) {
-	return min(min(v.x, v.y), min(v.z, v.w));
-}
-
-float fSphere(vec3 p, float r) {
-	return length(p) - r;
-}
-
-// Cylinder standing upright on the xz plane
-float fCylinder(vec3 p, float r, float height) {
-	float d = length(p.xz) - r;
-	d = max(d, abs(p.y) - height);
-	return d;
-}
-
-// Capsule: A Cylinder with round caps on both sides
-float fCapsule(vec3 p, float r, float c) {
-	return mix(length(p.xz) - r, length(vec3(p.x, abs(p.y) - c, p.z)) - r, step(c, abs(p.y)));
-}
-
-// Box: correct distance to corners
-float fBox(vec3 p, vec3 b) {
-	vec3 d = abs(p) - b;
-	return length(max(d, vec3(0))) + vmax(min(d, vec3(0)));
-}
-
-// Signed distance function for a cube centered at the origin
-// http://jamie-wong.com/2016/07/15/ray-marching-signed-distance-functions/
-float sdCube(in vec3 p, in vec3 r){
-	vec3 d = abs(p) - r;
-	// Assuming p is inside the cube, how far is it from the surface?
-    // Result will be negative or zero.
-	float inDist = min(max(d.x, max(d.y, d.z)), 0.0);
-	// Assuming p is outside the cube, how far is it from the surface?
-    // Result will be positive or zero.
-	float outDist = length(max(d, 0.0));
-	return inDist + outDist;
-}
-
-
-vec3 closest_point_on_line_segment(vec3 P, vec3 A, vec3 B) {
-	vec3 AB = B-A;
-	float l2 = dot(AB, AB);	// length squared
-	
-	if (l2 < 0.001) {
-		// line is too short, just use an endpoint
-		return A;
-	}
-	
-	// Consider the line extending the segment,
-	// parameterized as A + t (AB).
-	// We find projection of point p onto the line.
-	// It falls where t = [(AP) . (AB)] / |AB|^2
-	
-	vec3 AP = P-A;
-	float t = dot(AP, AB) / l2;
-	
-	if (t < 0.0) {
-		return A; 	// off A end
-	} else if (t > 1.0) {
-		return B; 	// off B end
-	} else {
-		return A + t * AB; // on segment
-	}
-}
-
-float sdCapsule1(vec3 p, vec3 a, vec3 b, float r) {
-	vec3 p1 = closest_point_on_line_segment(p, a, b);
-	return distance(p, p1) - r;
-}
-
-// polynomial smooth min (k = 0.1);
-float smin( float a, float b, float k ) {
-	float h = clamp( 0.5+0.5*(b-a)/k, 0.0, 1.0 );
-	return mix( b, a, h ) - k*h*(1.0-h);
-}
-
-float smax( float a, float b, float k ) {
-	float k1 = k*k;
-	float k2 = 1./k1;
-	return log( exp(k2*a) + exp(k2*b) )*k1;
-}
 
 // p is the vec3 position of the surface at the fragment.
 // viewProjectionMatrix would be typically passed in as a uniform
@@ -491,40 +390,6 @@ float computeDepth(vec3 p, mat4 viewProjectionMatrix) {
 	float ndc_depth = clip_space_pos.z / clip_space_pos.w;	
 	// standard perspective:
 	return (((dfar-dnear) * ndc_depth) + dnear + dfar) / 2.0;
-}
-
-
-//	q must be a normalized quaternion
-vec3 quat_rotate(vec4 q, vec3 v) {
-	vec4 p = vec4(
-		q.w*v.x + q.y*v.z - q.z*v.y,	// x
-		q.w*v.y + q.z*v.x - q.x*v.z,	// y
-		q.w*v.z + q.x*v.y - q.y*v.x,	// z
-		-q.x*v.x - q.y*v.y - q.z*v.z	// w
-	);
-	return vec3(
-		p.x*q.w - p.w*q.x + p.z*q.y - p.y*q.z,	// x
-		p.y*q.w - p.w*q.y + p.x*q.z - p.z*q.x,	// y
-		p.z*q.w - p.w*q.z + p.y*q.x - p.x*q.y	// z
-	);
-}
-
-// equiv. quat_rotate(quat_conj(q), v):
-// q must be a normalized quaternion
-vec3 quat_unrotate(in vec4 q, in vec3 v) {
-	// return quat_mul(quat_mul(quat_conj(q), vec4(v, 0)), q).xyz;
-	// reduced:
-	vec4 p = vec4(
-				  q.w*v.x - q.y*v.z + q.z*v.y,  // x
-				  q.w*v.y - q.z*v.x + q.x*v.z,  // y
-				  q.w*v.z - q.x*v.y + q.y*v.x,  // z
-				  q.x*v.x + q.y*v.y + q.z*v.z   // w
-				  );
-	return vec3(
-				p.w*q.x + p.x*q.w + p.y*q.z - p.z*q.y,  // x
-				p.w*q.y + p.y*q.w + p.z*q.x - p.x*q.z,  // y
-				p.w*q.z + p.z*q.w + p.x*q.y - p.y*q.x   // z
-				);
 }
 
 
@@ -569,7 +434,7 @@ vec3 normal4(in vec3 p, float eps) {
 }
 
 void main() {
-  vec3 lightdir = vec3(1, 1, 0);
+  vec3 lightdir = vec3(0, 4, 0) - world_vertex;
   vec3 color = vec3(1.);
   
 
@@ -630,14 +495,13 @@ void main() {
     //gl_FragDepth = computeDepth(world_pos.xyz, viewprojectionmatrix);
     // texcoord from naive normal:
     vec3 tnn = normalize(p)*0.5+0.5;
-    // use this for basic marking colors:
-    color = vec3(0.5, tnn.yz * 0.5+0.5);
-
     // in world space
     vec3 wnn = quat_rotate(world_orientation, nn);
-    // use this for lighting:
-    float ndl = dot(wnn, lightdir);
-    color *= ndl*0.4+0.6;
+
+    // reflect the light from above:
+    color *= dot(wnn, lightdir)*0.4+0.6;
+    // a simple kind of fresnel:
+    color *= dot(nn, rd)*0.4+0.6;
 
     alpha = clamp(float(contact) * 0.1, 0., 1.);
     //alpha = clamp(s * 0.05, 0., 1.);
@@ -655,10 +519,6 @@ void main() {
 `
 );
 let u_viewmatrix_loc = gl.getUniformLocation(program, "u_viewmatrix");
-let u_viewmatrix_inverse_loc = gl.getUniformLocation(
-  program,
-  "u_viewmatrix_inverse"
-);
 let u_perspectivematrix_loc = gl.getUniformLocation(
   program,
   "u_perspectivematrix"
@@ -723,19 +583,18 @@ gl.bindVertexArray(null);
 
 let once = 1
 function updateBuffers() {
-  if (0) {
+  if (!isReceivingData) {
     for (let i in agents) {
       let a = agents[i];
       let props = [a.phase, 0, 0, a.size];
-
       agent_attribs.set(a.pos, i*agent_attrib_count);
       agent_attribs.set(a.orient, i*agent_attrib_count + 4);
       agent_attribs.set(props, i*agent_attrib_count + 8);
     }
   }
 
-  gl.bindBuffer(gl.ARRAY_BUFFER, field.intensity_buf);
-  gl.bufferData(gl.ARRAY_BUFFER, field.intensities, gl.DYNAMIC_DRAW);
+  //gl.bindBuffer(gl.ARRAY_BUFFER, field.intensity_buf);
+  //gl.bufferData(gl.ARRAY_BUFFER, field.intensities, gl.DYNAMIC_DRAW);
 
   gl.bindBuffer(gl.ARRAY_BUFFER, attribs_buf);
   gl.bufferData(gl.ARRAY_BUFFER, agent_attribs, gl.DYNAMIC_DRAW);
@@ -752,39 +611,17 @@ function update() {
   let fps = 1/Math.max(0.001, dt);
   fpsAvg += 0.1*(fps-fpsAvg);
   document.getElementById('log').textContent = `${Math.round(fpsAvg)}fps  ${canvas.width}x${canvas.height} @${Math.floor(t)} avg ${rxAvg/(1024*1024)} mb at ${(received/t)/(1024*1024)} mbps`;
-  
 
-  updateAgents(dt);
+  if (!isReceivingData) updateAgents(dt);
   updateBuffers();
 }
 
+
 function draw() {
-  vr.cubeIsland.render(vr.projectionMat, vr.viewMat, vr.stats);
+  //vr.cubeIsland.render(vr.projectionMat, vr.viewMat, vr.stats);
 
   let perspective_matrix = vr.projectionMat;
   let view_matrix = vr.viewMat;
-  let view3 = mat3.fromMat4(mat3.create(), view_matrix);
-  let view_matrix_inverse = mat3.invert(mat3.create(), view3);
-  // gl.useProgram(program);
-  // gl.uniform1f(u_time_loc, t);
-  // gl.uniformMatrix4fv(u_viewmatrix_loc, false, view_matrix);
-  // gl.uniformMatrix3fv(u_viewmatrix_inverse_loc, false, view_matrix_inverse);
-  // gl.uniformMatrix4fv(u_perspectivematrix_loc, false, perspective_matrix);
-  // gl.bindVertexArray(vao);
-  // let instanceCount = locations.length / 3;
-  // gl.drawElementsInstanced(
-  //   gl.TRIANGLES,
-  //   cube.indices.length,
-  //   gl.UNSIGNED_SHORT,
-  //   0,
-  //   instanceCount
-  // );
-  // gl.bindVertexArray(null);
-  // gl.useProgram(null);
-
-  
-      
-  
   
   if (0) {
     gl.useProgram(field.program);
@@ -817,7 +654,6 @@ function draw() {
     gl.useProgram(program);
     gl.uniform1f(u_time_loc, t);
     gl.uniformMatrix4fv(u_viewmatrix_loc, false, view_matrix);
-    gl.uniformMatrix3fv(u_viewmatrix_inverse_loc, false, view_matrix_inverse);
     gl.uniformMatrix4fv(u_perspectivematrix_loc, false, perspective_matrix);
     gl.bindVertexArray(vao);
     let instanceCount = agent_attribs.length / agent_attrib_count; 
@@ -835,11 +671,11 @@ function draw() {
 
 /////////////////////
 
+let received = 0;
+let rxAvg = 0;
 
 /// socket stuff
 
-let received = 0;
-let rxAvg = 0;
 let sock
 try {
 	if (window.location.hostname == "localhost") {
@@ -854,39 +690,18 @@ let once = 1;
 				print("received", msg);
 			},
 			onbuffer(data, byteLength) {
-        console.log (byteLength , agent_attribs.byteLength);
+        //console.log (byteLength , agent_attribs.byteLength);
+        isReceivingData = true;
+
 				received += byteLength;
 				rxAvg += 0.1*(byteLength - rxAvg);
-				let rx = new Float32Array(data);
-        //field.intensities.set(rx);
-        agent_attribs.set(rx);
+        agent_attribs.set(new Float32Array(data));
 
-				
         if (once) {
-          console.log(agent_attribs)
-          once = 0
+        //   console.log(agent_attribs)
+          
+           once = 0
         }
-  
-
-				//let rx = new Uint8Array(data);
-				//console.log(rx[rx.length-1]);
-
-				
-				//console.log("received arraybuffer of " + byteLength + " bytes");
-				//console.log(agentsVao.positions.byteLength + agentsVao.colors.byteLength + linesVao.indices.byteLength);
-				//console.log(data)
-				// copy to agentsVao:
-				//let fa = new Float32Array(data);
-				//agentsVao.positions = fa.subarray(0, NUM_AGENTS*2);
-				//agentsVao.positions.set(fa);
-
-				// agentsVao.positions = new Float32Array(data, 0, NUM_AGENTS*2);
-				// agentsVao.colors = new Float32Array(data, agentsVao.positions.byteLength, NUM_AGENTS*4);
-				// linesVao.indices = new Uint16Array(data, agentsVao.colors.byteLength + agentsVao.colors.byteOffset, MAX_LINE_POINTS);
-
-				// dirty = true;
-
-				//console.log(utils.pick(linesVao.indices));
 			},
 		});
 	}

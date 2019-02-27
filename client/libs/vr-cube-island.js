@@ -152,25 +152,25 @@ window.VRCubeIsland = (function () {
       // floor. X=0 and Z=0 should be at the center of the users play space.
       appendBox(-width * 0.5, -width, -depth * 0.5, width * 0.5, 0, depth * 0.5);
   
-      // A sprinkling of other cubes to make things more visually interesting.
-      appendCube(1.1, 0.3, (-depth * 0.5) - 0.8, 0.5);
-      appendCube(-0.5, 1.0, (-depth * 0.5) - 0.9, 0.75);
-      appendCube(0.6, 1.5, (-depth * 0.5) - 0.6, 0.4);
-      appendCube(-1.0, 0.5, (-depth * 0.5) - 0.5, 0.2);
+      // // A sprinkling of other cubes to make things more visually interesting.
+      // appendCube(1.1, 0.3, (-depth * 0.5) - 0.8, 0.5);
+      // appendCube(-0.5, 1.0, (-depth * 0.5) - 0.9, 0.75);
+      // appendCube(0.6, 1.5, (-depth * 0.5) - 0.6, 0.4);
+      // appendCube(-1.0, 0.5, (-depth * 0.5) - 0.5, 0.2);
   
-      appendCube((-width * 0.5) - 0.8, 0.3, -1.1, 0.5);
-      appendCube((-width * 0.5) - 0.9, 1.0, 0.5, 0.75);
-      appendCube((-width * 0.5) - 0.6, 1.5, -0.6, 0.4);
-      appendCube((-width * 0.5) - 0.5, 0.5, 1.0, 0.2);
+      // appendCube((-width * 0.5) - 0.8, 0.3, -1.1, 0.5);
+      // appendCube((-width * 0.5) - 0.9, 1.0, 0.5, 0.75);
+      // appendCube((-width * 0.5) - 0.6, 1.5, -0.6, 0.4);
+      // appendCube((-width * 0.5) - 0.5, 0.5, 1.0, 0.2);
   
-      appendCube((width * 0.5) + 0.8, 0.3, 1.1, 0.5);
-      appendCube((width * 0.5) + 0.9, 1.0, -0.5, 0.75);
-      appendCube((width * 0.5) + 0.6, 1.5, 0.6, 0.4);
-      appendCube((width * 0.5) + 0.5, 0.5, -1.0, 0.2);
+      // appendCube((width * 0.5) + 0.8, 0.3, 1.1, 0.5);
+      // appendCube((width * 0.5) + 0.9, 1.0, -0.5, 0.75);
+      // appendCube((width * 0.5) + 0.6, 1.5, 0.6, 0.4);
+      // appendCube((width * 0.5) + 0.5, 0.5, -1.0, 0.2);
   
-      appendCube(1.1, 1.4, (depth * 0.5) + 0.8, 0.5);
-      appendCube(-0.5, 1.0, (depth * 0.5) + 0.9, 0.75);
-      appendCube(0.6, 0.4, (depth * 0.5) + 0.6, 0.4);
+      // appendCube(1.1, 1.4, (depth * 0.5) + 0.8, 0.5);
+      // appendCube(-0.5, 1.0, (depth * 0.5) + 0.9, 0.75);
+      // appendCube(0.6, 0.4, (depth * 0.5) + 0.6, 0.4);
   
   
       gl.bindBuffer(gl.ARRAY_BUFFER, this.vertBuffer);
