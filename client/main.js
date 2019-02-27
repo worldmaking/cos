@@ -198,7 +198,6 @@ gl.bindVertexArray(field.vao);
   gl.bufferData(gl.ARRAY_BUFFER, cube.vertices, gl.STATIC_DRAW);
   {
     let attrLoc = gl.getAttribLocation(field.program, "a_position");
-    console.log("a_position", attrLoc);
     gl.enableVertexAttribArray(attrLoc);
     gl.bindBuffer(gl.ARRAY_BUFFER, field.vertex_buf);
     gl.vertexAttribPointer(attrLoc, 3, gl.FLOAT, false, 0, 0);
@@ -209,7 +208,6 @@ gl.bindVertexArray(field.vao);
   gl.bufferData(gl.ARRAY_BUFFER, field.locations, gl.STATIC_DRAW);
   {
     let attrLoc = gl.getAttribLocation(field.program, "a_location");
-    console.log("a_location", attrLoc);
     gl.enableVertexAttribArray(attrLoc);
     gl.bindBuffer(gl.ARRAY_BUFFER, field.location_buf);
     gl.vertexAttribPointer(attrLoc, 3, gl.FLOAT, false, 0, 0);
@@ -221,7 +219,6 @@ gl.bindVertexArray(field.vao);
   gl.bufferData(gl.ARRAY_BUFFER, field.intensities, gl.DYNAMIC_DRAW);
   {
     let attrLoc = gl.getAttribLocation(field.program, "a_intensity");
-    console.log("a_intensity", attrLoc);
     gl.enableVertexAttribArray(attrLoc);
     gl.bindBuffer(gl.ARRAY_BUFFER, field.intensity_buf);
     gl.vertexAttribPointer(attrLoc, 4, gl.FLOAT, false, 0, 0);
@@ -258,6 +255,11 @@ function reset() {
     quat.random(a.orient);
     quat.normalize(a.orient, a.orient);
     agents[i] = a;
+
+    let props = [a.phase, 0, 0, a.size];
+    agent_attribs.set(a.pos, i*agent_attrib_count);
+    agent_attribs.set(a.orient, i*agent_attrib_count + 4);
+    agent_attribs.set(props, i*agent_attrib_count + 8);
   }
 }
 reset();
@@ -290,7 +292,6 @@ let program = makeProgramFromCode(
 
 
 uniform mat4 u_viewmatrix, u_perspectivematrix;
-uniform mat3 u_viewmatrix_inverse;
 uniform float u_time;
 in vec3 a_position;
 in vec3 a_normal;
@@ -342,7 +343,6 @@ void main() {
   scale = a_properties.w;
 
 	vec3 vertex = a_position;
-  //vertex = u_viewmatrix_inverse * vertex; 
   
   world_vertex = quat_rotate(a_orientation, vertex * scale) + a_location.xyz;
   world_orientation = a_orientation;
@@ -519,10 +519,6 @@ void main() {
 `
 );
 let u_viewmatrix_loc = gl.getUniformLocation(program, "u_viewmatrix");
-let u_viewmatrix_inverse_loc = gl.getUniformLocation(
-  program,
-  "u_viewmatrix_inverse"
-);
 let u_perspectivematrix_loc = gl.getUniformLocation(
   program,
   "u_perspectivematrix"
@@ -591,7 +587,6 @@ function updateBuffers() {
     for (let i in agents) {
       let a = agents[i];
       let props = [a.phase, 0, 0, a.size];
-
       agent_attribs.set(a.pos, i*agent_attrib_count);
       agent_attribs.set(a.orient, i*agent_attrib_count + 4);
       agent_attribs.set(props, i*agent_attrib_count + 8);
@@ -616,39 +611,17 @@ function update() {
   let fps = 1/Math.max(0.001, dt);
   fpsAvg += 0.1*(fps-fpsAvg);
   document.getElementById('log').textContent = `${Math.round(fpsAvg)}fps  ${canvas.width}x${canvas.height} @${Math.floor(t)} avg ${rxAvg/(1024*1024)} mb at ${(received/t)/(1024*1024)} mbps`;
-  
 
   if (!isReceivingData) updateAgents(dt);
   updateBuffers();
 }
+
 
 function draw() {
   //vr.cubeIsland.render(vr.projectionMat, vr.viewMat, vr.stats);
 
   let perspective_matrix = vr.projectionMat;
   let view_matrix = vr.viewMat;
-  let view3 = mat3.fromMat4(mat3.create(), view_matrix);
-  let view_matrix_inverse = mat3.invert(mat3.create(), view3);
-  // gl.useProgram(program);
-  // gl.uniform1f(u_time_loc, t);
-  // gl.uniformMatrix4fv(u_viewmatrix_loc, false, view_matrix);
-  // gl.uniformMatrix3fv(u_viewmatrix_inverse_loc, false, view_matrix_inverse);
-  // gl.uniformMatrix4fv(u_perspectivematrix_loc, false, perspective_matrix);
-  // gl.bindVertexArray(vao);
-  // let instanceCount = locations.length / 3;
-  // gl.drawElementsInstanced(
-  //   gl.TRIANGLES,
-  //   cube.indices.length,
-  //   gl.UNSIGNED_SHORT,
-  //   0,
-  //   instanceCount
-  // );
-  // gl.bindVertexArray(null);
-  // gl.useProgram(null);
-
-  
-      
-  
   
   if (0) {
     gl.useProgram(field.program);
@@ -681,7 +654,6 @@ function draw() {
     gl.useProgram(program);
     gl.uniform1f(u_time_loc, t);
     gl.uniformMatrix4fv(u_viewmatrix_loc, false, view_matrix);
-    gl.uniformMatrix3fv(u_viewmatrix_inverse_loc, false, view_matrix_inverse);
     gl.uniformMatrix4fv(u_perspectivematrix_loc, false, perspective_matrix);
     gl.bindVertexArray(vao);
     let instanceCount = agent_attribs.length / agent_attrib_count; 
@@ -720,6 +692,7 @@ let once = 1;
 			onbuffer(data, byteLength) {
         //console.log (byteLength , agent_attribs.byteLength);
         isReceivingData = true;
+
 				received += byteLength;
 				rxAvg += 0.1*(byteLength - rxAvg);
         agent_attribs.set(new Float32Array(data));
@@ -729,27 +702,6 @@ let once = 1;
           
            once = 0
         }
-  
-
-				//let rx = new Uint8Array(data);
-				//console.log(rx[rx.length-1]);
-
-				
-				//console.log("received arraybuffer of " + byteLength + " bytes");
-				//console.log(agentsVao.positions.byteLength + agentsVao.colors.byteLength + linesVao.indices.byteLength);
-				//console.log(data)
-				// copy to agentsVao:
-				//let fa = new Float32Array(data);
-				//agentsVao.positions = fa.subarray(0, NUM_AGENTS*2);
-				//agentsVao.positions.set(fa);
-
-				// agentsVao.positions = new Float32Array(data, 0, NUM_AGENTS*2);
-				// agentsVao.colors = new Float32Array(data, agentsVao.positions.byteLength, NUM_AGENTS*4);
-				// linesVao.indices = new Uint16Array(data, agentsVao.colors.byteLength + agentsVao.colors.byteOffset, MAX_LINE_POINTS);
-
-				// dirty = true;
-
-				//console.log(utils.pick(linesVao.indices));
 			},
 		});
 	}
