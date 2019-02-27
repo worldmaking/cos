@@ -7,7 +7,7 @@
     "include_dirs": [],
     "libraries": [],
     "msbuild_toolset": "v141",
-    "msvs_windows_target_platform_version": "10.0.16299.0"
+    "msvs_windows_target_platform_version": "10.0.17763.0"
   },
   "variables": {
     "asan": 0,
@@ -70,7 +70,7 @@
     "v8_typed_array_max_size_in_heap": 0,
     "v8_use_snapshot": "true",
     "want_separate_host_toolset": 0,
-    "nodedir": "C:\\Users\\exhibit\\.node-gyp\\10.15.1",
+    "nodedir": "C:\\Users\\alice\\.node-gyp\\10.15.1",
     "standalone_static_library": 1,
     "msbuild_path": "C:\\Program Files (x86)\\Microsoft Visual Studio\\2017\\Community\\MSBuild\\15.0\\Bin\\MSBuild.exe"
   }

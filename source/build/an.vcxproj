@@ -11,12 +11,12 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{C3BF06AE-5C2A-184E-C8D7-405DF4EB5D53}</ProjectGuid>
+    <ProjectGuid>{A8B906D9-56FE-27D3-CE93-45C6D2FE5D8F}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>an</RootNamespace>
     <IgnoreWarnCompileDuplicatedFilename>true</IgnoreWarnCompileDuplicatedFilename>
     <PreferredToolArchitecture>x64</PreferredToolArchitecture>
-    <WindowsTargetPlatformVersion>10.0.16299.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0.17763.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props"/>
   <PropertyGroup Label="Configuration">
@@ -48,7 +48,7 @@
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>C:\Users\exhibit\.node-gyp\10.15.1\include\node;C:\Users\exhibit\.node-gyp\10.15.1\src;C:\Users\exhibit\.node-gyp\10.15.1\deps\openssl\config;C:\Users\exhibit\.node-gyp\10.15.1\deps\openssl\openssl\include;C:\Users\exhibit\.node-gyp\10.15.1\deps\uv\include;C:\Users\exhibit\.node-gyp\10.15.1\deps\zlib;C:\Users\exhibit\.node-gyp\10.15.1\deps\v8\include;..;..\..\node_modules\nan;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\alice\.node-gyp\10.15.1\include\node;C:\Users\alice\.node-gyp\10.15.1\src;C:\Users\alice\.node-gyp\10.15.1\deps\openssl\config;C:\Users\alice\.node-gyp\10.15.1\deps\openssl\openssl\include;C:\Users\alice\.node-gyp\10.15.1\deps\uv\include;C:\Users\alice\.node-gyp\10.15.1\deps\zlib;C:\Users\alice\.node-gyp\10.15.1\deps\v8\include;..;..\..\node_modules\nan;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>/bigobj %(AdditionalOptions)</AdditionalOptions>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <BufferSecurityCheck>true</BufferSecurityCheck>
@@ -69,7 +69,7 @@
       <WarningLevel>Level3</WarningLevel>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;DelayImp.lib;&quot;C:\Users\exhibit\.node-gyp\10.15.1\x64\node.lib&quot;</AdditionalDependencies>
+      <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;DelayImp.lib;&quot;C:\Users\alice\.node-gyp\10.15.1\x64\node.lib&quot;</AdditionalDependencies>
       <AdditionalOptions>/ignore:4199 %(AdditionalOptions)</AdditionalOptions>
       <AllowIsolation>true</AllowIsolation>
       <DataExecutionPrevention>true</DataExecutionPrevention>
@@ -84,13 +84,13 @@
       <TargetMachine>MachineX64</TargetMachine>
     </Link>
     <ResourceCompile>
-      <AdditionalIncludeDirectories>C:\Users\exhibit\.node-gyp\10.15.1\include\node;C:\Users\exhibit\.node-gyp\10.15.1\src;C:\Users\exhibit\.node-gyp\10.15.1\deps\openssl\config;C:\Users\exhibit\.node-gyp\10.15.1\deps\openssl\openssl\include;C:\Users\exhibit\.node-gyp\10.15.1\deps\uv\include;C:\Users\exhibit\.node-gyp\10.15.1\deps\zlib;C:\Users\exhibit\.node-gyp\10.15.1\deps\v8\include;..;..\..\node_modules\nan;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\alice\.node-gyp\10.15.1\include\node;C:\Users\alice\.node-gyp\10.15.1\src;C:\Users\alice\.node-gyp\10.15.1\deps\openssl\config;C:\Users\alice\.node-gyp\10.15.1\deps\openssl\openssl\include;C:\Users\alice\.node-gyp\10.15.1\deps\uv\include;C:\Users\alice\.node-gyp\10.15.1\deps\zlib;C:\Users\alice\.node-gyp\10.15.1\deps\v8\include;..;..\..\node_modules\nan;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>NODE_GYP_MODULE_NAME=an;USING_UV_SHARED=1;USING_V8_SHARED=1;V8_DEPRECATION_WARNINGS=1;WIN32;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE;_HAS_EXCEPTIONS=0;BUILDING_NODE_EXTENSION;DEBUG;_DEBUG;V8_ENABLE_CHECKS;%(PreprocessorDefinitions);%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
-      <AdditionalIncludeDirectories>C:\Users\exhibit\.node-gyp\10.15.1\include\node;C:\Users\exhibit\.node-gyp\10.15.1\src;C:\Users\exhibit\.node-gyp\10.15.1\deps\openssl\config;C:\Users\exhibit\.node-gyp\10.15.1\deps\openssl\openssl\include;C:\Users\exhibit\.node-gyp\10.15.1\deps\uv\include;C:\Users\exhibit\.node-gyp\10.15.1\deps\zlib;C:\Users\exhibit\.node-gyp\10.15.1\deps\v8\include;..;..\..\node_modules\nan;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\alice\.node-gyp\10.15.1\include\node;C:\Users\alice\.node-gyp\10.15.1\src;C:\Users\alice\.node-gyp\10.15.1\deps\openssl\config;C:\Users\alice\.node-gyp\10.15.1\deps\openssl\openssl\include;C:\Users\alice\.node-gyp\10.15.1\deps\uv\include;C:\Users\alice\.node-gyp\10.15.1\deps\zlib;C:\Users\alice\.node-gyp\10.15.1\deps\v8\include;..;..\..\node_modules\nan;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <AdditionalOptions>%(AdditionalOptions)</AdditionalOptions>
       <BufferSecurityCheck>true</BufferSecurityCheck>
       <CompileAsWinRT>false</CompileAsWinRT>
@@ -118,7 +118,7 @@
       <AdditionalOptions>/LTCG:INCREMENTAL %(AdditionalOptions)</AdditionalOptions>
     </Lib>
     <Link>
-      <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;DelayImp.lib;&quot;C:\Users\exhibit\.node-gyp\10.15.1\x64\node.lib&quot;</AdditionalDependencies>
+      <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;DelayImp.lib;&quot;C:\Users\alice\.node-gyp\10.15.1\x64\node.lib&quot;</AdditionalDependencies>
       <AdditionalOptions>/ignore:4199 /LTCG:INCREMENTAL %(AdditionalOptions)</AdditionalOptions>
       <AllowIsolation>true</AllowIsolation>
       <DataExecutionPrevention>true</DataExecutionPrevention>
@@ -135,7 +135,7 @@
       <TargetMachine>MachineX64</TargetMachine>
     </Link>
     <ResourceCompile>
-      <AdditionalIncludeDirectories>C:\Users\exhibit\.node-gyp\10.15.1\include\node;C:\Users\exhibit\.node-gyp\10.15.1\src;C:\Users\exhibit\.node-gyp\10.15.1\deps\openssl\config;C:\Users\exhibit\.node-gyp\10.15.1\deps\openssl\openssl\include;C:\Users\exhibit\.node-gyp\10.15.1\deps\uv\include;C:\Users\exhibit\.node-gyp\10.15.1\deps\zlib;C:\Users\exhibit\.node-gyp\10.15.1\deps\v8\include;..;..\..\node_modules\nan;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\alice\.node-gyp\10.15.1\include\node;C:\Users\alice\.node-gyp\10.15.1\src;C:\Users\alice\.node-gyp\10.15.1\deps\openssl\config;C:\Users\alice\.node-gyp\10.15.1\deps\openssl\openssl\include;C:\Users\alice\.node-gyp\10.15.1\deps\uv\include;C:\Users\alice\.node-gyp\10.15.1\deps\zlib;C:\Users\alice\.node-gyp\10.15.1\deps\v8\include;..;..\..\node_modules\nan;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>NODE_GYP_MODULE_NAME=an;USING_UV_SHARED=1;USING_V8_SHARED=1;V8_DEPRECATION_WARNINGS=1;WIN32;_CRT_SECURE_NO_DEPRECATE;_CRT_NONSTDC_NO_DEPRECATE;_HAS_EXCEPTIONS=0;BUILDING_NODE_EXTENSION;%(PreprocessorDefinitions);%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ResourceCompile>
   </ItemDefinitionGroup>
@@ -144,7 +144,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\node_module.cpp"/>
-    <ClCompile Include="C:\Users\exhibit\AppData\Roaming\npm\node_modules\node-gyp\src\win_delay_load_hook.cc"/>
+    <ClCompile Include="C:\Users\alice\AppData\Roaming\npm\node_modules\node-gyp\src\win_delay_load_hook.cc"/>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets"/>
   <Import Project="$(VCTargetsPath)\BuildCustomizations\masm.targets"/>
