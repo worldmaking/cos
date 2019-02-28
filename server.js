@@ -222,7 +222,6 @@ wss.on('connection', function(ws, req) {
 	ws.on('close', function(connection) {
 		console.log("connection closed");
         console.log("server has "+wss.clients.size+" connected clients");
-		clearInterval(stream);
 	});
 	
 	// respond to any messages from the client:
