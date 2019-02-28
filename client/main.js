@@ -62,6 +62,8 @@ in vec4 a_intensity;
 out vec4 intensity;
 out vec3 eyepos, world_vertex, ray_origin, ray_direction;
 
+${vertex_shader_lib}
+
 void main() {
   vec3 vertex = a_position;
   world_vertex = (u_modelmatrix * vec4((vertex*0.5+0.5) + a_location, 1.)).xyz;
@@ -83,36 +85,7 @@ in vec4 intensity;
 in vec3 eyepos, world_vertex, ray_origin, ray_direction;
 out vec4 outColor;
 
-vec3 closest_point_on_line_segment(vec3 P, vec3 A, vec3 B) {
-	vec3 AB = B-A;
-	float l2 = dot(AB, AB);	// length squared
-	
-	if (l2 < 0.001) {
-		// line is too short, just use an endpoint
-		return A;
-	}
-	
-	// Consider the line extending the segment,
-	// parameterized as A + t (AB).
-	// We find projection of point p onto the line.
-	// It falls where t = [(AP) . (AB)] / |AB|^2
-	
-	vec3 AP = P-A;
-	float t = dot(AP, AB) / l2;
-	
-	if (t < 0.0) {
-		return A; 	// off A end
-	} else if (t > 1.0) {
-		return B; 	// off B end
-	} else {
-		return A + t * AB; // on segment
-	}
-}
-
-float sdCapsule1(vec3 p, vec3 a, vec3 b, float r) {
-	vec3 p1 = closest_point_on_line_segment(p, a, b);
-	return distance(p, p1) - r;
-}
+${fragment_shader_lib}
 
 float map(vec3 p) {
   
@@ -304,41 +277,9 @@ out vec3 world_vertex;
 out vec4 world_orientation;
 out mat4 viewprojectionmatrix;
 
-//	q must be a normalized quaternion
-vec3 quat_rotate(vec4 q, vec3 v) {
-	vec4 p = vec4(
-		q.w*v.x + q.y*v.z - q.z*v.y,	// x
-		q.w*v.y + q.z*v.x - q.x*v.z,	// y
-		q.w*v.z + q.x*v.y - q.y*v.x,	// z
-		-q.x*v.x - q.y*v.y - q.z*v.z	// w
-	);
-	return vec3(
-		p.x*q.w - p.w*q.x + p.z*q.y - p.y*q.z,	// x
-		p.y*q.w - p.w*q.y + p.x*q.z - p.z*q.x,	// y
-		p.z*q.w - p.w*q.z + p.y*q.x - p.x*q.y	// z
-	);
-}
-
-// equiv. quat_rotate(quat_conj(q), v):
-// q must be a normalized quaternion
-vec3 quat_unrotate(in vec4 q, in vec3 v) {
-	// return quat_mul(quat_mul(quat_conj(q), vec4(v, 0)), q).xyz;
-	// reduced:
-	vec4 p = vec4(
-				  q.w*v.x - q.y*v.z + q.z*v.y,  // x
-				  q.w*v.y - q.z*v.x + q.x*v.z,  // y
-				  q.w*v.z - q.x*v.y + q.y*v.x,  // z
-				  q.x*v.x + q.y*v.y + q.z*v.z   // w
-				  );
-	return vec3(
-				p.w*q.x + p.x*q.w + p.y*q.z - p.z*q.y,  // x
-				p.w*q.y + p.y*q.w + p.z*q.x - p.x*q.z,  // y
-				p.w*q.z + p.z*q.w + p.x*q.y - p.y*q.x   // z
-				);
-}
+${vertex_shader_lib}
 
 void main() {
-
 
   scale = a_properties.w;
 
@@ -394,11 +335,11 @@ float computeDepth(vec3 p, mat4 viewProjectionMatrix) {
 
 
 float map(vec3 p) {
-  float t1 = (cos(time * -TWOPI)*0.5+0.5);
-  float t2 = (sin(time * -TWOPI)*0.5+0.5);
+  float t1 = 1.; //(cos(time * -TWOPI)*0.5+0.5);
+  float t2 = 0.; //(sin(time * -TWOPI)*0.5+0.5);
   float s = fSphere(p, t1);
   float s1 = fSphere(p+vec3(0, 0, 0.3), t1*0.7);
-  float s2 = fSphere(p-+vec3(0, 0, 0.3), t2*0.7);
+  float s2 = fSphere(p-vec3(0, 0, 0.3), t2*0.7);
   float c = fCylinder(p, 0.2, 1.);
   float b = fBox(p, vec3(0.5, 1., 0.1));
   float sc = smin(s, c, 0.2);
@@ -411,7 +352,12 @@ float map(vec3 p) {
 
   float ss = smin(s1, s2, 0.3);
   float ssc = smin(ss, C, .1);
-  return ssc;
+
+  float e0 = fSphere(p+vec3(+0.4, 0., 0.7), 0.3);
+  float e1 = fSphere(p+vec3(-0.4, 0., 0.7), 0.3);
+  float es = min(e0, e1);
+
+  return min(ssc, es);
 }
 
 
@@ -448,7 +394,7 @@ void main() {
 
   // 0.001 at dist=0
   // 0.05 at dist = 1
-  float EPS = 0.0001 + 0.1*(distance);// * distance;
+  float EPS = 0.0001 + 0.05*(distance);// * distance;
   #define FAR 2.*sqrt(3.)
 
   vec3 p = ro;
@@ -497,6 +443,8 @@ void main() {
     vec3 tnn = normalize(p)*0.5+0.5;
     // in world space
     vec3 wnn = quat_rotate(world_orientation, nn);
+
+    color = vec3(0.4, tnn.yz*0.5+0.5);
 
     // reflect the light from above:
     color *= dot(wnn, lightdir)*0.4+0.6;
