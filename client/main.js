@@ -353,8 +353,8 @@ float map(vec3 p) {
   float ss = smin(s1, s2, 0.3);
   float ssc = smin(ss, C, .1);
 
-  float e0 = fSphere(p+vec3(+0.3, 0., 0.7), 0.3);
-  float e1 = fSphere(p+vec3(-0.3, 0., 0.7), 0.3);
+  float e0 = fSphere(p+vec3(+0.4, 0., 0.7), 0.3);
+  float e1 = fSphere(p+vec3(-0.4, 0., 0.7), 0.3);
   float es = min(e0, e1);
 
   return min(ssc, es);
@@ -394,7 +394,7 @@ void main() {
 
   // 0.001 at dist=0
   // 0.05 at dist = 1
-  float EPS = 0.01; //0.0001 + 0.1*(distance);// * distance;
+  float EPS = 0.0001 + 0.05*(distance);// * distance;
   #define FAR 2.*sqrt(3.)
 
   vec3 p = ro;
@@ -443,6 +443,8 @@ void main() {
     vec3 tnn = normalize(p)*0.5+0.5;
     // in world space
     vec3 wnn = quat_rotate(world_orientation, nn);
+
+    color = vec3(0.4, tnn.yz*0.5+0.5);
 
     // reflect the light from above:
     color *= dot(wnn, lightdir)*0.4+0.6;
