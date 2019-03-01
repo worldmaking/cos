@@ -42,6 +42,8 @@ const HDIM = 256;
 const HDIM2 = HDIM*HDIM;
 
 let hmap = {
+  modelmatrix: mat4.create(),
+
   locations: new Float32Array(HDIM2 * 3),
   heights: new Float32Array(HDIM2 * 1),
 
@@ -77,11 +79,12 @@ hmap.indices = new Uint16Array(indices)
 hmap.program = makeProgramFromCode(
   gl,
   `#version 300 es
-uniform mat4 u_viewmatrix, u_perspectivematrix;
+uniform mat4 u_viewmatrix, u_perspectivematrix, u_modelmatrix;
 in vec3 a_location;
 in float a_height;
 out vec3 vertex;
 out float height;
+out float debug;
 
 ${vertex_shader_lib}
 
@@ -89,26 +92,32 @@ void main() {
   vertex = a_location;
   vertex.y = a_height;
   height = a_height;
-  gl_Position = u_perspectivematrix * u_viewmatrix * vec4(vertex, 1);
+  vec4 view_vertex = u_viewmatrix * u_modelmatrix * vec4(vertex, 1);
+  gl_Position = u_perspectivematrix * view_vertex;
+  debug = clamp(length(view_vertex.xyz)*3. - 0.1, 0., 1.);
   gl_PointSize = 3.0;
 }`,
   `#version 300 es
 precision mediump float;
 in vec3 vertex;
+in float debug;
 out vec4 outColor;
 
 ${fragment_shader_lib}
 
 void main() {
-  float h = min(0.5, vertex.y*2.);
+  float h = min(0.5, vertex.y*3.);
   float home = 1. - min(1., length(vertex.xz));
   vec2 xz = mod(vertex, 1.).xz;
   outColor = vec4(xz.x, home, xz.y, 1.);
+  outColor = vec4(h);
+  outColor *= debug;
 }
 `);
 
 
 hmap.u_viewmatrix_loc = gl.getUniformLocation(hmap.program, "u_viewmatrix");
+hmap.u_modelmatrix_loc = gl.getUniformLocation(hmap.program, "u_modelmatrix");
 hmap.u_perspectivematrix_loc = gl.getUniformLocation(hmap.program, "u_perspectivematrix");
 
 hmap.vao = gl.createVertexArray();
@@ -182,7 +191,8 @@ ${vertex_shader_lib}
 void main() {
   vec3 vertex = a_position;
   world_vertex = (u_modelmatrix * vec4((vertex*0.5+0.5) + a_location, 1.)).xyz;
-  gl_Position = u_perspectivematrix * u_viewmatrix * vec4(world_vertex, 1);
+  vec4 view_vertex = u_viewmatrix * vec4(world_vertex, 1);
+  gl_Position = u_perspectivematrix * view_vertex;
   gl_PointSize = 3.0;
   intensity = a_intensity;
 
@@ -421,7 +431,7 @@ void main() {
 	ray_origin = vertex;
 	ray_direction = quat_unrotate(a_orientation, world_vertex - eyepos); 
 
-  time = a_properties.x;
+  time = u_time + a_properties.y;
 }
 `,
   `#version 300 es
@@ -448,15 +458,27 @@ float computeDepth(vec3 p, mat4 viewProjectionMatrix) {
 	return (((dfar-dnear) * ndc_depth) + dnear + dfar) / 2.0;
 }
 
+float sdCapsuleRipple(vec3 p, vec3 a, vec3 b, float ra, float rb, float timephase) {
+  vec3 pa = p-a, ba = b-a;
+  float t = dot(pa, ba) / dot(ba, ba);
+  float h = clamp(t, 0., 1.); // limit line
+  // dist
+  vec3 rel = pa - ba*h;
+  float d = length(rel);
+  // ripple:
+  //float h1 = h + 0.2*sin(PI * 4. * (t*t + timephase));
+  //return d - mix(ra, rb, h1);
+  return d - ra * (1. + 0.2*sin(TWOPI * (t + timephase)));
+}
 
 float map(vec3 p) {
-  float t1 = 1.; //(cos(time * -TWOPI)*0.5+0.5);
-  float t2 = 0.; //(sin(time * -TWOPI)*0.5+0.5);
+  float t1 = (cos(time * -TWOPI)*0.2+0.8);
+  float t2 = (sin(time * -TWOPI)*0.3+0.7);
   float s = fSphere(p, t1);
-  float s1 = fSphere(p+vec3(0, 0, 0.3), 0.7);
-  float s2 = fSphere(p+vec3(0, 0, 0.3), 0.5);
+  float s1 = fSphere(p+vec3(0, 0, 0.3), 0.7*t1);
+  float s2 = fSphere(p+vec3(0, 0, 0.3), 0.6*t2);
   float sh = max(s1, -s2);
-  float c = fCylinder(p, 0.2, 1.);
+  float c = fCylinder(p.xzy, 0.2, 1.);
   float b = fBox(p, vec3(0.5, 1., 0.1));
   float sc = smin(s, c, 0.2);
   float cb = smin(c, b, 0.2);
@@ -465,6 +487,7 @@ float map(vec3 p) {
   vec3 A = vec3(0, 0, 0.7);
   vec3 B = vec3(0, 0, -0.7);
   float C1 = sdCapsule1(p, A, B, 0.3);
+  //float C1 = sdCapsuleRipple(p, A, B, 0.3, 0.3, time);
   float C2 = sdCapsule1(p, A, B, 0.1);
   float C = max(C1, -C2);
 
@@ -474,8 +497,10 @@ float map(vec3 p) {
   float e0 = fSphere(p+vec3(+0.4, 0., 0.7), 0.3);
   float e1 = fSphere(p+vec3(-0.4, 0., 0.7), 0.3);
   float es = min(e0, e1);
+  float final = min(ssc, es);
+  final = max(final, -c);
 
-  return min(ssc, es);
+  return final + 0.02 * (1. + sin(TWOPI * (p.z*2. + abs(p.x) + time)));; //min(ssc, es);
 }
 
 
@@ -505,6 +530,9 @@ void main() {
   float distance = pow(length(world_vertex - eyepos), 2.);
 
   vec3 rd = normalize(ray_direction);
+
+  //rd.y += 0.1*sin(time);
+
   vec3 ro = (ray_origin);
   vec3 nn = normal; // normalize(normal) not necessary for a cube face
 
@@ -675,7 +703,7 @@ let t0 = performance.now() * 0.001;
 let t = t0;
 let fpsAvg = 60;
 function update() {
-  let t = performance.now() * 0.001;
+  t = performance.now() * 0.001;
   let dt = t - t0;
   t0 = t;
   let fps = 1/Math.max(0.001, dt);
@@ -688,25 +716,58 @@ function update() {
 
 
 function draw() {
-  //vr.cubeIsland.render(vr.projectionMat, vr.viewMat, vr.stats);
-
   let perspective_matrix = vr.projectionMat;
   let view_matrix = vr.viewMat;
-  
-  if (0) {
-    gl.useProgram(field.program);
-    gl.uniformMatrix4fv(field.u_modelmatrix_loc, false, field_matrix);
-    gl.uniformMatrix4fv(field.u_viewmatrix_loc, false, view_matrix);
-    gl.uniformMatrix4fv(field.u_perspectivematrix_loc, false, perspective_matrix);
-    gl.bindVertexArray(field.vao);
-    //gl.drawArrays(gl.LINES, 0, DIM3);
-    //gl.drawElements(gl.POINTS, field.indices.length, gl.UNSIGNED_SHORT, 0);
-    gl.drawElementsInstanced(gl.TRIANGLES, cube.indices.length, gl.UNSIGNED_SHORT, 0, DIM3);
-    gl.bindVertexArray(null);
-    gl.useProgram(null);
+
+  // adjust vr viewmat to match the kinect world space:
+  let vive_mat = mat4.fromRotationTranslation(
+    mat4.create(), 
+    quat.fromEuler(quat.create(), 
+      projector_calibration.vive_euler[0], 
+      projector_calibration.vive_euler[1], 
+      projector_calibration.vive_euler[2]
+    ), 
+    vec3.fromValues(
+      projector_calibration.vive_translate[0], 
+      projector_calibration.vive_translate[1], 
+      projector_calibration.vive_translate[2]
+    )
+  );
+  mat4.multiply(view_matrix, view_matrix, vive_mat);
+
+  //vr.cubeIsland.render(vr.projectionMat, vr.viewMat, vr.stats);
+  if (1) {
+    // To ensure that the FPS counter is visible in VR mode we have to
+    // render it as part of the scene.
+    mat4.fromTranslation(vr.cubeIsland.statsMat, [0, 1.5, -vr.cubeIsland.depth * 0.5]);
+    mat4.scale(vr.cubeIsland.statsMat, vr.cubeIsland.statsMat, [0.5, 0.5, 0.5]);
+    mat4.rotateX(vr.cubeIsland.statsMat, vr.cubeIsland.statsMat, -0.75);
+    mat4.multiply(vr.cubeIsland.statsMat, view_matrix, vr.cubeIsland.statsMat);
+    vr.stats.render(perspective_matrix, vr.cubeIsland.statsMat);
   }
 
+  drawscene(perspective_matrix, view_matrix);
+
+  mat4.translate(view_matrix, view_matrix, vec3.fromValues(0, -3, 0));
+  drawscene(perspective_matrix, view_matrix);
+}
+
+function drawscene(perspective_matrix, view_matrix) {
   
+
+  // if (0) {
+  //   gl.useProgram(field.program);
+  //   gl.uniformMatrix4fv(field.u_modelmatrix_loc, false, field_matrix);
+  //   gl.uniformMatrix4fv(field.u_viewmatrix_loc, false, view_matrix);
+  //   gl.uniformMatrix4fv(field.u_perspectivematrix_loc, false, perspective_matrix);
+  //   gl.bindVertexArray(field.vao);
+  //   //gl.drawArrays(gl.LINES, 0, DIM3);
+  //   //gl.drawElements(gl.POINTS, field.indices.length, gl.UNSIGNED_SHORT, 0);
+  //   gl.drawElementsInstanced(gl.TRIANGLES, cube.indices.length, gl.UNSIGNED_SHORT, 0, DIM3);
+  //   gl.bindVertexArray(null);
+  //   gl.useProgram(null);
+  // }
+
   // // enable blending:
   gl.disable(gl.CULL_FACE);
   //gl.disable(gl.DEPTH_TEST)
@@ -722,7 +783,9 @@ function draw() {
   //gl.blendFunc(gl.ZERO, gl.SRC_ALPHA);
 
   if (1) {
+
     gl.useProgram(hmap.program);
+    gl.uniformMatrix4fv(hmap.u_modelmatrix_loc, false, hmap.modelmatrix);
     gl.uniformMatrix4fv(hmap.u_viewmatrix_loc, false, view_matrix);
     gl.uniformMatrix4fv(hmap.u_perspectivematrix_loc, false, perspective_matrix);
     gl.bindVertexArray(hmap.vao);

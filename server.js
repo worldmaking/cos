@@ -269,6 +269,8 @@ wss.on('connection', function(ws, req) {
 			//console.log("received arraybuffer", ab);
 			// as float32s:
 			//console.log(new Float32Array(ab));
+
+			// if this is the heightmap, need to convert it to the world coordinate space?
 		} else {
 			try {
 				handlemessage(JSON.parse(e), ws);
