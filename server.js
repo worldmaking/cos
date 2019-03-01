@@ -22,6 +22,7 @@
 	- 1cm in a 5m space.
 	height plus normal: 16 bytes per point. 256x256 fits into 1mb. 
 	- 2cm in a 5m space. 
+	full xyz: 12 bytes per point, too much data
 
 	Blob 3: Voxel field:
 	a 32x32x32 voxel field in 1mb can fit 32 bytes per voxel, enough for two vec4's
@@ -90,6 +91,8 @@
 		- also may need to deal with network byte order etc., packing, etc.
 	- Don't use Max: port the Kinect handling code over to a node binary module
 		- lose the ability to live patch the configuration
+	- Use a mmapfile 
+
 
 
 */
@@ -108,6 +111,44 @@ const express = require('express');
 const WebSocket = require('ws');
 const PNG = require("pngjs").PNG;
 const { vec2, vec3, vec4, quat, mat3, mat4 } = require("gl-matrix");
+
+const projector_calibration = JSON.parse(fs.readFileSync("projector_calibration/calib.json", "utf-8"));
+{
+	/*
+		Want to derive proper transformation from this
+		- get kinect points relative to groundspace
+		- get camera position/orientation relative to groundspace
+	*/
+
+	// note: raw kinect data looks into -Z axis
+	// the calib data gives the ground and the projector data in this kinect viewspace
+	// we'd like to re-position it into the groundspace
+	// ground quat/pos gives the pose of our ground plane, the ideal centre of the space.
+	// it is originally given in the kinect's viewspace
+	// (but groundquat was wrongly rotated by 90 degrees :-()
+	let ground_quat = quat.mul([], projector_calibration.ground_quat, quat.fromEuler(quat.create(), 90., 0., 0.));
+	projector_calibration.ground_quat_fixed = ground_quat;
+	let ground_position = projector_calibration.ground_position;
+	let quat_ground = quat.invert([], ground_quat);
+	let position_ground = vec3.scale([], ground_position, -1);
+
+	let k2g_rot = mat4.fromQuat([], ground_quat); 
+	let k2g_tra = mat4.fromTranslation([], ground_position);
+	// k2g_mat will take kinect viewspace and turn it into ground space
+	let k2g_mat = mat4.multiply([], k2g_tra, k2g_rot);
+	let g2k_mat = mat4.invert([], k2g_mat)
+	let g2k_rot = quat.fromMat3([], mat3.fromMat4([], g2k_mat));
+
+	// // let's transform the projector to derive the desired camera:
+	projector_calibration.camera_position = vec3.transformMat4([], projector_calibration.position, g2k_mat);
+	projector_calibration.camera_quat = quat.mul([], g2k_rot, projector_calibration.quat);
+	projector_calibration.position_ground = position_ground;
+	projector_calibration.quat_ground = quat_ground;
+
+	if (0) {
+		fs.writeFileSync("projector_calibration/calib.json", JSON.stringify(projector_calibration), "utf-8");
+	}
+}
 
 const an = require('./source/build/Release/an');
 an.init();
@@ -179,8 +220,9 @@ const wss = new WebSocket.Server({
 });
 
 // send a (string) message to all connected clients:
-function send_all_clients(msg) {
+function send_all_clients(msg, ignore) {
 	wss.clients.forEach(function each(client) {
+		if (client == ignore) return;
 		try {
 			client.send(msg);
 		} catch (e) {
@@ -194,14 +236,6 @@ let sessions = [];
 
 // whenever a client connects to this websocket:
 wss.on('connection', function(ws, req) {
-
-    //console.log("ws", ws)
-	//console.log("req", req)
-
-	
-		
-	
-
 	console.log("server received a connection");
 	console.log("server has "+wss.clients.size+" connected clients");
 	
@@ -214,7 +248,6 @@ wss.on('connection', function(ws, req) {
 			// ignore this, client will still emit close event
 		} else {
 			console.error("websocket error: ", e.message);
-			clearInterval(stream);
 		}
 	});
 
@@ -229,7 +262,11 @@ wss.on('connection', function(ws, req) {
 		if (e instanceof Buffer) {
 			// get an arraybuffer from the message:
 			const ab = e.buffer.slice(e.byteOffset,e.byteOffset+e.byteLength);
-			console.log("received arraybuffer", ab);
+
+			// send to everyone except ourselves
+			//send_all_clients(ab, ws)
+
+			//console.log("received arraybuffer", ab);
 			// as float32s:
 			//console.log(new Float32Array(ab));
 		} else {
@@ -239,7 +276,12 @@ wss.on('connection', function(ws, req) {
 				console.log('bad JSON: ', e);
 			}
 		}
-    });
+	});
+	
+	ws.send(JSON.stringify({
+		message: "config",
+		projector_calibration: projector_calibration,
+	}))
     
 	// // Example sending some greetings:
 	// ws.send(JSON.stringify({
@@ -297,6 +339,6 @@ let stream = setInterval(function() {
 	//ws.send(field);
 	send_all_clients(buf);
 
-	if (Math.random() < 0.01) console.log("fps ", fpsAvg, " at ", t);
+	//if (Math.random() < 0.01) console.log("fps ", fpsAvg, " at ", t);
 
 }, 1000/60);

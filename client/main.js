@@ -1,5 +1,18 @@
 /* global: mat4, vec3, VRCubeIsland, WGLUDebugGeometry, WGLUStats, WGLUTextureLoader, VRSamplesUtil */
 
+let projector_calibration = {
+  "ground_position":[0.001474501914345,-0.116043269634247,-3.399029493331909],
+  "ground_quat":[0.019847802817822,0.018058635294437,-0.011425343342125,0.999571561813354],
+  "position":[-0.20009072124958,0.12004879117012,0.11839796602726],
+  "frustum":[-0.540263652801514,0.686421573162079,-0.429053455591202,0.335920542478561,1,10],
+  "rotatexyz":[-1.062064528465271,0.801017045974731,-1.60685408115387],
+  "quat":[-0.009365003556013,0.007119102869183,-0.013956263661385,0.999833405017853],
+  "ground_quat_fixed":[0.7208383332669634,0.004690445640796409,-0.020848320873468468,0.6927693018190737],
+  "quat_ground":[-0.7208427585109026,-0.004690474435555491,0.020848448861813883,0.6927735547465508],
+  "position_ground":[-0.001474501914345,0.116043269634247,3.399029493331909],
+  "camera_position":[-0.33518560060247854,3.495735864008822,-0.3691928870850422],
+  "camera_quat":[-0.7272938198015632,-0.010013291787240237,0.006000773148561227,0.686231795217466]
+};
 
 let isReceivingData = false;
 
@@ -24,6 +37,108 @@ let cube = makeCube();
   A good room-scale would be maybe 6x6m
   For a 32^3 field, if we make voxels every 20cm, it covers 6.4m. 
 */
+
+const HDIM = 256;
+const HDIM2 = HDIM*HDIM;
+
+let hmap = {
+  locations: new Float32Array(HDIM2 * 3),
+  heights: new Float32Array(HDIM2 * 1),
+
+  // how many indices?
+  //indices: new Uint16Array(),
+};
+
+let indices = [];
+
+for (let y=0; y<HDIM; y++) { 
+  for (let x=0; x<HDIM; x++) {
+
+    let i00 = x + y*HDIM;
+    let i01 = (x-1) + y*HDIM;
+    let i10 = x + (y-1)*HDIM;
+
+    if (x > 0) {
+      indices.push(i01);
+      indices.push(i00);
+    }
+    if (y > 0) {
+      indices.push(i10);
+      indices.push(i00);
+    }
+
+    let zoom = 2;
+    let val = [((x/HDIM) * 2 - 1) * zoom, 0, ((y/HDIM) * 2 -1) * zoom];
+    hmap.locations.set(val, i00 * 3);
+  } 
+} 
+hmap.indices = new Uint16Array(indices)
+
+hmap.program = makeProgramFromCode(
+  gl,
+  `#version 300 es
+uniform mat4 u_viewmatrix, u_perspectivematrix;
+in vec3 a_location;
+in float a_height;
+out vec3 vertex;
+out float height;
+
+${vertex_shader_lib}
+
+void main() {
+  vertex = a_location;
+  vertex.y = a_height;
+  height = a_height;
+  gl_Position = u_perspectivematrix * u_viewmatrix * vec4(vertex, 1);
+  gl_PointSize = 3.0;
+}`,
+  `#version 300 es
+precision mediump float;
+in vec3 vertex;
+out vec4 outColor;
+
+${fragment_shader_lib}
+
+void main() {
+  float h = min(0.5, vertex.y*2.);
+  float home = 1. - min(1., length(vertex.xz));
+  vec2 xz = mod(vertex, 1.).xz;
+  outColor = vec4(xz.x, home, xz.y, 1.);
+}
+`);
+
+
+hmap.u_viewmatrix_loc = gl.getUniformLocation(hmap.program, "u_viewmatrix");
+hmap.u_perspectivematrix_loc = gl.getUniformLocation(hmap.program, "u_perspectivematrix");
+
+hmap.vao = gl.createVertexArray();
+hmap.location_buf = gl.createBuffer();
+hmap.height_buf = gl.createBuffer();
+hmap.index_buf = gl.createBuffer();
+gl.bindVertexArray(hmap.vao);
+{
+  gl.bindBuffer(gl.ARRAY_BUFFER, hmap.location_buf);
+  gl.bufferData(gl.ARRAY_BUFFER, hmap.locations, gl.STATIC_DRAW);
+  {
+    let attrLoc = gl.getAttribLocation(hmap.program, "a_location");
+    gl.enableVertexAttribArray(attrLoc);
+    gl.vertexAttribPointer(attrLoc, 3, gl.FLOAT, false, 0, 0);
+    gl.bindBuffer(gl.ARRAY_BUFFER, null);
+  }
+  
+  gl.bindBuffer(gl.ARRAY_BUFFER, hmap.height_buf);
+  gl.bufferData(gl.ARRAY_BUFFER, hmap.heights, gl.DYNAMIC_DRAW);
+  {
+    let attrLoc = gl.getAttribLocation(hmap.program, "a_height");
+    gl.enableVertexAttribArray(attrLoc);
+    gl.vertexAttribPointer(attrLoc, 1, gl.FLOAT, false, 0, 0);
+    gl.bindBuffer(gl.ARRAY_BUFFER, null);
+  }
+
+  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, hmap.index_buf);
+  gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, hmap.indices, gl.STATIC_DRAW);
+}
+gl.bindVertexArray(null);
 
 const DIM = 32;
 const DIM3 = DIM*DIM*DIM;
@@ -338,8 +453,9 @@ float map(vec3 p) {
   float t1 = 1.; //(cos(time * -TWOPI)*0.5+0.5);
   float t2 = 0.; //(sin(time * -TWOPI)*0.5+0.5);
   float s = fSphere(p, t1);
-  float s1 = fSphere(p+vec3(0, 0, 0.3), t1*0.7);
-  float s2 = fSphere(p-vec3(0, 0, 0.3), t2*0.7);
+  float s1 = fSphere(p+vec3(0, 0, 0.3), 0.7);
+  float s2 = fSphere(p+vec3(0, 0, 0.3), 0.5);
+  float sh = max(s1, -s2);
   float c = fCylinder(p, 0.2, 1.);
   float b = fBox(p, vec3(0.5, 1., 0.1));
   float sc = smin(s, c, 0.2);
@@ -348,10 +464,12 @@ float map(vec3 p) {
 
   vec3 A = vec3(0, 0, 0.7);
   vec3 B = vec3(0, 0, -0.7);
-  float C = sdCapsule1(p, A, B, 0.3);
+  float C1 = sdCapsule1(p, A, B, 0.3);
+  float C2 = sdCapsule1(p, A, B, 0.1);
+  float C = max(C1, -C2);
 
   float ss = smin(s1, s2, 0.3);
-  float ssc = smin(ss, C, .1);
+  float ssc = smin(sh, C, .1);
 
   float e0 = fSphere(p+vec3(+0.4, 0., 0.7), 0.3);
   float e1 = fSphere(p+vec3(-0.4, 0., 0.7), 0.3);
@@ -444,7 +562,8 @@ void main() {
     // in world space
     vec3 wnn = quat_rotate(world_orientation, nn);
 
-    color = vec3(0.4, tnn.yz*0.5+0.5);
+    color = vec3(0.8, tnn.yz*0.15+0.75);
+
 
     // reflect the light from above:
     color *= dot(wnn, lightdir)*0.4+0.6;
@@ -546,6 +665,9 @@ function updateBuffers() {
 
   gl.bindBuffer(gl.ARRAY_BUFFER, attribs_buf);
   gl.bufferData(gl.ARRAY_BUFFER, agent_attribs, gl.DYNAMIC_DRAW);
+
+  gl.bindBuffer(gl.ARRAY_BUFFER, hmap.height_buf);
+  gl.bufferData(gl.ARRAY_BUFFER, hmap.heights, gl.DYNAMIC_DRAW);
 }
 updateBuffers();
 
@@ -583,6 +705,7 @@ function draw() {
     gl.bindVertexArray(null);
     gl.useProgram(null);
   }
+
   
   // // enable blending:
   gl.disable(gl.CULL_FACE);
@@ -597,6 +720,18 @@ function draw() {
   // multiplicative (for white background):
   // 2nd arg can by any of: SRC_COLOR, SRC_ALPHA, ONE_MINUS_SRC_COLOR, or ONE_MINUS_SRC_ALPHA
   //gl.blendFunc(gl.ZERO, gl.SRC_ALPHA);
+
+  if (1) {
+    gl.useProgram(hmap.program);
+    gl.uniformMatrix4fv(hmap.u_viewmatrix_loc, false, view_matrix);
+    gl.uniformMatrix4fv(hmap.u_perspectivematrix_loc, false, perspective_matrix);
+    gl.bindVertexArray(hmap.vao);
+    //gl.drawArrays(gl.POINTS, 0, HDIM2);
+    gl.drawElements(gl.LINES, hmap.indices.length, gl.UNSIGNED_SHORT, 0);
+    //gl.drawElementsInstanced(gl.POINTS, hmap.locations.length, gl.UNSIGNED_SHORT, 0, DIM3);
+    gl.bindVertexArray(null);
+    gl.useProgram(null);
+  }
 
   if (1) {
     gl.useProgram(program);
@@ -624,18 +759,22 @@ let rxAvg = 0;
 
 /// socket stuff
 
+let onetime = 1
+
 let sock
+let max_sock
 try {
 	if (window.location.hostname == "localhost") {
-    
-let once = 1;
 		sock = new Socket({
 			reload_on_disconnect: true,
 			onopen: function() {
 				//this.send({ cmd: "getdata", date: Date.now() });
 			},
 			onmessage: function(msg) { 
-				print("received", msg);
+        console.log("received", msg);
+        if (msg.message == "config") {
+          projector_calibration = msg.projector_calibration;
+        }
 			},
 			onbuffer(data, byteLength) {
         //console.log (byteLength , agent_attribs.byteLength);
@@ -644,12 +783,25 @@ let once = 1;
 				received += byteLength;
 				rxAvg += 0.1*(byteLength - rxAvg);
         agent_attribs.set(new Float32Array(data));
-
-        if (once) {
-        //   console.log(agent_attribs)
-          
-           once = 0
+			},
+    });
+    
+    maxsock = new Socket({
+      port: 7474,
+      reload_on_disconnect: false,
+      reconnect_period: 10000,
+			onopen: function() {
+				//this.send({ cmd: "getdata", date: Date.now() });
+			},
+			onmessage: function(msg) { 
+        console.log("received", msg);
+        if (msg.message == "config") {
+          projector_calibration = msg.projector_calibration;
         }
+			},
+			onbuffer(data, byteLength) {
+        //console.log (byteLength , hmap.heights.byteLength);
+        hmap.heights.set(new Float32Array(data));
 			},
 		});
 	}

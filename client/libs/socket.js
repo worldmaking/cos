@@ -9,6 +9,7 @@ class Socket {
         this.hostname = opt.hostname || window.location.hostname; 
         this.port = opt.port || window.location.port; 
         this.protocols = opt.protocols || [];
+        this.reconnect_period = 2000;
 
         this.socket = null;
 
@@ -45,7 +46,7 @@ class Socket {
                         console.log("websocket reconnecting");
                         connect();
                     }
-                }, 2000);		
+                }, reconnect_period);		
                 if (self.onclose) self.onclose(e);
                 else console.log("websocket disconnected from "+addr);
             }

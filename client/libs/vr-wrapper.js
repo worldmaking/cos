@@ -270,7 +270,7 @@ let vr = {
       gl.enable(gl.CULL_FACE);
       mat4.perspective(
         vr.projectionMat,
-        Math.PI * 0.4,
+        Math.PI * 0.7,
         vr.canvas.width / vr.canvas.height,
         vr.depthNear, vr.depthFar
       );
