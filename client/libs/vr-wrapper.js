@@ -270,12 +270,15 @@ let vr = {
       gl.enable(gl.CULL_FACE);
       mat4.perspective(
         vr.projectionMat,
-        Math.PI * 0.7,
+        Math.PI * 0.5,
         vr.canvas.width / vr.canvas.height,
         vr.depthNear, vr.depthFar
       );
       mat4.identity(vr.viewMat);
-      mat4.translate(vr.viewMat, vr.viewMat, [0, -vr.PLAYER_HEIGHT, 0]);
+      let a = t * 0.0003;
+      let r = -3;
+      mat4.rotateY(vr.viewMat, vr.viewMat, -a)
+      mat4.translate(vr.viewMat, vr.viewMat, [r*Math.sin(a), -vr.PLAYER_HEIGHT, r*Math.cos(a)]);
       //vr.cubeIsland.render(vr.projectionMat, vr.viewMat, vr.stats);
       vr.renderSceneView(false);
       if (vr.showStats) vr.stats.renderOrtho();

@@ -150,6 +150,12 @@ const projector_calibration = JSON.parse(fs.readFileSync("projector_calibration/
 	}
 }
 
+const HDIM = 256;
+const HDIM2 = HDIM*HDIM;
+let hmap = {
+	heights: new Float32Array(HDIM2),
+};
+
 const an = require('./source/build/Release/an');
 an.init();
 
@@ -233,6 +239,7 @@ function send_all_clients(msg, ignore) {
 
 let sessionId = 0;
 let sessions = [];
+let onetime =1;
 
 // whenever a client connects to this websocket:
 wss.on('connection', function(ws, req) {
@@ -271,6 +278,12 @@ wss.on('connection', function(ws, req) {
 			//console.log(new Float32Array(ab));
 
 			// if this is the heightmap, need to convert it to the world coordinate space?
+			hmap.heights.set(new Float32Array(ab));
+			// let heights = new Float32Array(ab);
+			// for (let i=0; i<heights.length; i++) {
+			// 	hmap.locations[i*3+1] = heights[i];
+			// }
+	  
 		} else {
 			try {
 				handlemessage(JSON.parse(e), ws);
@@ -336,7 +349,7 @@ let stream = setInterval(function() {
 	fpsAvg += 0.1*(fps-fpsAvg);
 
 	//updateField();
-	let buf = an.update(dt);
+	let buf = an.update(dt, hmap.heights);
 
 	//ws.send(field);
 	send_all_clients(buf);

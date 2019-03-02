@@ -124,7 +124,7 @@ void main() {
   outColor = vec4(h);
   outColor *= debug;
 
- // outColor = vec4(xz.x, home, xz.y, 1.);
+  outColor = vec4(xz.x, home, xz.y, 1.);
 }
 `);
 
@@ -413,6 +413,7 @@ out vec3 normal, eyepos, ray_origin, ray_direction;
 out float time, scale;
 out vec3 world_vertex;
 out vec4 world_orientation;
+out vec4 properties;
 out mat4 viewprojectionmatrix;
 
 ${vertex_shader_lib}
@@ -444,7 +445,8 @@ void main() {
 	ray_origin = vertex;
 	ray_direction = quat_unrotate(a_orientation, world_vertex - eyepos); 
 
-  time = u_time + a_properties.y;
+  time = u_time + a_properties.y*3.;
+  properties = a_properties;
 }
 `,
   `#version 300 es
@@ -458,6 +460,7 @@ in float time, scale;
 in vec3 world_vertex;
 in vec4 world_orientation;
 in mat4 viewprojectionmatrix;
+in vec4 properties;
 out vec4 outColor;
 
 // p is the vec3 position of the surface at the fragment.
@@ -606,8 +609,8 @@ void main() {
     // in world space
     vec3 wnn = quat_rotate(world_orientation, nn);
 
-    color = vec3(0.8, tnn.yz*0.15+0.75);
-
+    color = vec3(0.8, wnn.yz*0.5+0.5);
+    color *= properties.xyz;
 
     // reflect the light from above:
     color *= dot(wnn, lightdir)*0.4+0.6;
@@ -623,8 +626,10 @@ void main() {
     
     color *= alpha;
     
-
+    //color = properties.xyz;
     outColor = vec4(color, alpha);
+
+
 
   } else {
     discard;
@@ -742,7 +747,7 @@ function draw(vr, isInVR) {
   let perspective_matrix = vr.projectionMat;
   let view_matrix = vr.viewMat;
 
-  console.log("vr?", isInVR)
+  isInVR = true;
 
   if (!isInVR) {
     let up = quat_uy([], projector_calibration.camera_quat);
@@ -787,9 +792,10 @@ function draw(vr, isInVR) {
 
   drawscene(perspective_matrix, view_matrix, isInVR);
 
-  if (isInVR) {
+  if (0 && isInVR) {
     mat4.translate(view_matrix, view_matrix, vec3.fromValues(0, -3, 0));
-    drawscene(perspective_matrix, view_matrix);
+    mat4.rotateY(view_matrix, view_matrix, Math.PI);
+    drawscene(perspective_matrix, view_matrix, isInVR);
   }
 }
 
@@ -881,7 +887,7 @@ try {
         }
 			},
 			onbuffer(data, byteLength) {
-        //console.log (byteLength , agent_attribs.byteLength);
+        //console.log (byteLength);
         isReceivingData = true;
 
 				received += byteLength;
@@ -906,6 +912,7 @@ try {
 			onbuffer(data, byteLength) {
         //console.log (byteLength , hmap.heights.byteLength);
         hmap.heights.set(new Float32Array(data));
+        
 			},
 		});
 	}

@@ -39,6 +39,18 @@ napi_value node_update(napi_env env, napi_callback_info info) {
     double dt;
     status = napi_get_value_double(env, args[0], &dt);
 
+    napi_typedarray_type typedarray_type = napi_float32_array;
+    size_t typedarray_numelements = 3*256*256;
+    void * typedarray_data;
+    napi_value typedarray_arraybuffer;
+    size_t typedarray_arraybuffer_byte_offset;
+    status = napi_get_typedarray_info(env, args[1], 
+        &typedarray_type, &typedarray_numelements, &typedarray_data,
+        &typedarray_arraybuffer, &typedarray_arraybuffer_byte_offset);
+    //printf("got typed array of elements %d : %f\n", typedarray_numelements, ((float *)typedarray_data)[0]);
+
+    memcpy(shared.hmap.data, typedarray_data, sizeof(float) * typedarray_numelements);
+
     // double value1;
     // status = napi_get_value_double(env, args[1], &value1);
 

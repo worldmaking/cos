@@ -267,6 +267,15 @@ struct Array2DSized {
 	int index_raw(int x, int y) {
 		return x + y*COLS;
 	}
+
+	bool oob(int x, int y) {
+		return x < 0 || y < 0 || x >= COLS || y >= ROWS;
+	}
+
+	// returns -1 if position is out of bounds:
+	int index_oob(int x, int y) {
+		return oob(x, y) ? -1 : index_raw(x, y); 
+	}
 	
 	int index_clamp(int x, int y) {
 		x = x < 0 ? 0 : x >= COLS ? COLS - 1 : x;

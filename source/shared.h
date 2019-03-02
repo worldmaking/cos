@@ -5,7 +5,7 @@
 #include "support.h"
 
 
-static const int LAND_DIM = 128;
+static const int LAND_DIM = 256;
 static const int LAND_DIM_1 = LAND_DIM-1;
 static const int LAND_NUM_INDICES = LAND_DIM_1*LAND_DIM_1*6;
 
@@ -23,8 +23,8 @@ static const int MORPHOGENS_MAX = 4;
 static const int NEIGHBOURS_MAX = 12;
 static const int LINKS_MAX = AGENTS_MAX * NEIGHBOURS_MAX * 4;
 
-glm::vec3 world_min = glm::vec3(-4., 0., -4.);
-glm::vec3 world_max = glm::vec3( 4., 8.,  4.);
+glm::vec3 world_min = glm::vec3(-3., 0., -3.);
+glm::vec3 world_max = glm::vec3( 3., 6.,  3.);
 glm::vec3 world_dim = world_max - world_min;
 glm::vec3 world_scale = 1.f/world_dim;
 glm::mat4 WorldMatrix = glm::scale(glm::translate(glm::mat4(1.0f), world_min), world_max - world_min);
@@ -93,6 +93,7 @@ STRUCT_ALIGN_BEGIN struct Agent {
 	glm::vec3 attractions, flows, avoidances;
 	glm::quat orientations;
 	float speeds;
+	int32_t landidx;
 	
 	glm::quat quat;
 	float state;
@@ -187,6 +188,7 @@ STRUCT_ALIGN_BEGIN struct Shared {
 	Stalk stalks[STALKS_MAX];
 	Dust dust[DUST_MAX];
 	
+	Array2DSized<float, LAND_DIM, LAND_DIM> hmap;
 	Array2DSized<glm::vec3, LAND_DIM, LAND_DIM> land;
 	unsigned int land_indices[LAND_NUM_INDICES];
 	Array2DSized<glm::vec3, LAND_DIM_1, LAND_DIM_1> land_intermediate_normals;
@@ -226,6 +228,7 @@ STRUCT_ALIGN_BEGIN struct Shared {
 		density.noise();
 		shadow.clear();
 		land.clear();
+		hmap.clear();
 #ifdef AL_OSX
 		for (int i=0; i<10; i++) {
 			glm::vec2 tc = glm::diskRand(0.4f) + 0.5f;
@@ -385,11 +388,26 @@ STRUCT_ALIGN_BEGIN struct Shared {
 			// increment position by velocity
 			// and constrain to world
 			a.pos = glm::clamp(a.pos + a.vel, world_min, world_max);
-			
-			// add to density field:
-			// convert a.pos to normalized:
-			glm::vec3 norm = (a.pos - world_min) * world_scale;
-			density.splat(glm::vec4(a.antigen, a.morphogens.y, a.morphogens.z, a.size), norm);
+			// convert position to land cell coordinate
+			// let zoom = 2; let  pos = [((x/HDIM) * 2 - 1) * zoom, 0, ((y/HDIM) * 2 -1) * zoom];
+			float izoom = 1/2.f;
+			glm::vec2 pos2 = (glm::vec2(a.pos.x, a.pos.z) * izoom + 1.f) * (0.5f * LAND_DIM);
+			a.landidx = hmap.index_oob(pos2.x, pos2.y);
+
+			// // add to density field:
+			// // convert a.pos to normalized:
+			// glm::vec3 norm = (a.pos - world_min) * world_scale;
+			// density.splat(glm::vec4(a.antigen, a.morphogens.y, a.morphogens.z, a.size), norm);
+
+			// if (a.landidx >= 0) {
+			// 	float h = hmap.data[a.landidx];
+			// 	// paint our creature 
+			// 	a.antigen = h;
+			// 	a.morphogens[1] = a.morphogens[2] = a.antigen;
+			// } else {
+			// 	a.antigen = 0.f;
+			// 	a.morphogens[1] = a.morphogens[2] = a.antigen;
+			// }
 		}
 		// copy to rendering state:
 		for (int i=0; i<AGENTS_MAX; i++) {

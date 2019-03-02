@@ -1,19 +1,70 @@
 
 - Check projector calibration looks OK
+	- creature shadow-view tuning
+	- vignette on shadow view?
+		- needs an fbo really
 
 - creatures should respond to human geometry
+	- shared.h now has an hmap array, and agents have a .landidx property (which is -ve for oob); 
+	- check a.landidx >= 0 and use hmap.data[a.landidx] to read height at agent location
+	- decide what to do with this information. will agents linger near people, will they flee?
+		- if agents are above, if they are below, if they are close...
+	- having normal would be sweet, but we don't (and anyway too noisy)
 
 - calibrate bell locations; should we visualize them with something?
-	- would be helpful at least to visualize vive controllers during calibration... 
+	- remember, need to convert vive controller position into kinect space
+	- would be helpful at least to visualize vive controllers and bell locations during calibration... 
+	- store this in a json, pass the json to the cpp to configure; each of [board, channel, x, y, z] or [board, [xyz], [xyz]... ]
+- let bells ring from agents
+	- can either hashspace or density query at each bell location.
+		- hashspace has the lower resolution (about 20cm voxels), and can detect arbitrary radii. could simply count no. agents in the bell's voxel, or in a radius
+	- want to dump back to js (to send to max) an intensity for each bell
+		- 54 bells, each with [board_id, channel_id, intensity] = 162 chars, pretty short.
+		- max really wants 6 intensities per board though, so we're looking at 7*9 = 63 floats.
+	- iter that array and send json messages for each board
+	- might want to interpolate those numbers over time for the spooky effect
 
-- vignette on shadow view?
-	- needs an fbo really
-
-- creature shadow-view: uses distance but should really use height
-	- use a param to mix between eye-distance and world_vertex.y as the factor?
+- visual style
 
 - some degree of auto-reloading?
 	
+--------------------
+
+what's actually going on in the sim?
+- agents have 4 morphogens, and an antigen
+- agents can swap colour
+- agents count neighbours
+- agents have 'attractions, flows, avoidances' 
+
+
+- there's 2D: land, land_normals, land_cells
+- there's 3D: density, shadow, hashspace
+	- density used by bells only
+	- land for rendering only it seems
+- we have the data for agent links
+
+- sim update:
+	- if dust gets too high, relocated to a random "stalk"
+	- update agent hashspace
+	- per agent:
+		- per neighbour
+			- accum attractions, flows, orientations, speeds
+			- morphogens, avoidances
+			- diffuse antigens
+		- no neigbbours? random walk attractions & morphogens
+		- steering:
+			- a bit of random walk,
+			- neighbour effects (flocking ish)
+			- always apply avoidances
+
+- main update: 
+	- density decay
+	- per agent:
+		- update vel, quat, position
+		- splat to density: [antigen, morph.yz, size] (== agent.params)
+	- per dust
+		- dust rises with some noise
+
 
 --------------------
 
