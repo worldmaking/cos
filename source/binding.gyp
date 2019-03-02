@@ -17,10 +17,7 @@
 					'libraries': [
 						'-framework Cocoa',
 						'-framework IOKit',
-						'-framework CoreFoundation',
-						'-framework CoreVideo',
-						'-L../glfw3/osx', '-lglfw3',
-						'-L../libuv/osx', '-luv'
+						'-framework CoreFoundation'
 					]
 				},
 				'xcode_settings': {

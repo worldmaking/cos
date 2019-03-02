@@ -123,6 +123,8 @@ void main() {
   outColor = vec4(xz.x, home, xz.y, 1.);
   outColor = vec4(h);
   outColor *= debug;
+
+  outColor = vec4(1.);
 }
 `);
 
@@ -726,9 +728,18 @@ function update() {
 }
 
 
-function draw() {
+function draw(vr, isInVR) {
   let perspective_matrix = vr.projectionMat;
   let view_matrix = vr.viewMat;
+
+  console.log("vr?", isInVR)
+
+  if (!isInVR) {
+    let up = quat_uy([], projector_calibration.camera_quat);
+    mat4.lookAt(view_matrix, projector_calibration.camera_position, vec3.create(), up);
+
+    mat4.frustum(perspective_matrix, projector_calibration.frustum[0], projector_calibration.frustum[1], projector_calibration.frustum[2], projector_calibration.frustum[3], 0.1, 10.);
+  }
 
   // adjust vr viewmat to match the kinect world space:
   let vive_mat = mat4.fromRotationTranslation(
@@ -759,8 +770,8 @@ function draw() {
 
   drawscene(perspective_matrix, view_matrix);
 
-  mat4.translate(view_matrix, view_matrix, vec3.fromValues(0, -3, 0));
-  drawscene(perspective_matrix, view_matrix);
+  //mat4.translate(view_matrix, view_matrix, vec3.fromValues(0, -3, 0));
+  //drawscene(perspective_matrix, view_matrix);
 }
 
 function drawscene(perspective_matrix, view_matrix) {
