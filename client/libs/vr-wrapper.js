@@ -152,8 +152,8 @@ let vr = {
       );
     },
     
-    renderSceneView: function() {
-      if (draw) draw(this);
+    renderSceneView: function(invr) {
+      if (draw) draw(this, invr);
     }
   };
     
@@ -239,13 +239,13 @@ let vr = {
         gl.enable(gl.CULL_FACE);
         vr.getStandingViewMatrix(vr.viewMat, vr.frameData.leftViewMatrix);
         mat4.copy(vr.projectionMat, vr.frameData.leftProjectionMatrix);
-        vr.renderSceneView();
+        vr.renderSceneView(true);
         gl.viewport(vr.canvas.width * 0.5, 0, vr.canvas.width * 0.5, vr.canvas.height);
         gl.enable(gl.DEPTH_TEST);
         gl.enable(gl.CULL_FACE);
         vr.getStandingViewMatrix(vr.viewMat, vr.frameData.rightViewMatrix);
         mat4.copy(vr.projectionMat, vr.frameData.rightProjectionMatrix);
-        vr.renderSceneView();
+        vr.renderSceneView(true);
         vr.Display.submitFrame();
       } else {
         gl.viewport(0, 0, vr.canvas.width, vr.canvas.height);
@@ -258,7 +258,7 @@ let vr = {
           vr.depthNear, vr.depthFar
         );
         vr.getStandingViewMatrix(vr.viewMat, vr.frameData.leftViewMatrix);
-        vr.renderSceneView();
+        vr.renderSceneView(false);
         if (vr.showStats) vr.stats.renderOrtho();
       }
     } else {
@@ -277,7 +277,7 @@ let vr = {
       mat4.identity(vr.viewMat);
       mat4.translate(vr.viewMat, vr.viewMat, [0, -vr.PLAYER_HEIGHT, 0]);
       //vr.cubeIsland.render(vr.projectionMat, vr.viewMat, vr.stats);
-      vr.renderSceneView();
+      vr.renderSceneView(false);
       if (vr.showStats) vr.stats.renderOrtho();
     }
     if (vr.showStats) vr.stats.end();
