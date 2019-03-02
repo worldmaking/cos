@@ -626,7 +626,7 @@ void main() {
     
     color *= alpha;
     
-    //color = properties.xyz;
+    color = vec3(-properties.x);
     outColor = vec4(color, alpha);
 
 

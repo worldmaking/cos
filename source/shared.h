@@ -408,6 +408,22 @@ STRUCT_ALIGN_BEGIN struct Shared {
 			// 	a.antigen = 0.f;
 			// 	a.morphogens[1] = a.morphogens[2] = a.antigen;
 			// }
+
+			
+			if (a.landidx >= 0) {
+			 	float h = hmap.data[a.landidx];
+				// +ve if above the land (in meters)
+				float rh = a.pos.y - h; 
+				// if this is +ve, we are inside the creature. it will never be greater than 1
+				// if it is -ve, how far we are outside, in number of body-sizes
+				float inside = a.size - fabs(rh) / a.size; 
+				a.antigen = inside;
+				a.morphogens[1] = rh;
+			} else {
+				a.antigen = 0;
+				a.morphogens[1] = 0;
+			}
+			
 		}
 		// copy to rendering state:
 		for (int i=0; i<AGENTS_MAX; i++) {
@@ -478,7 +494,6 @@ STRUCT_ALIGN_BEGIN struct Shared {
 		int links_found = 0;
 		for (int i=0; i<AGENTS_MAX; i++) {
 			Agent& a = agents[i];
-			
 			
 			// reset sensing state:
    		 	a.attractions = a.flows = a.avoidances = glm::vec3(0.);
