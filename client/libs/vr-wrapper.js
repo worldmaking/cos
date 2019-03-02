@@ -40,10 +40,10 @@ let vr = {
       }
     },
     
-    init: function(canvas, gl) {
+    init: function(canvas, gl, showErrors) {
       let vr = this;
       this.canvas = canvas;
-      this.frameData = new VRFrameData();
+      this.frameData = (window.VRFrameData) ? new VRFrameData() : {};
       
       let initWebGL = (preserveDrawingBuffer) => {
         if (!gl) {
@@ -70,7 +70,7 @@ let vr = {
       
       if (!navigator.getVRDisplays) {
         initWebGL(false);
-        VRSamplesUtil.addError("Your browser does not sufficiently support WebVR.");
+        if (showErrors) VRSamplesUtil.addError("Your browser does not sufficiently support WebVR.");
         return;
       }
       
@@ -204,7 +204,7 @@ let vr = {
     }
   }
     
-    function onResize() {
+  function onResize() {
     if (vr.Display && vr.Display.isPresenting) {
       let leftEye = vr.Display.getEyeParameters("left");
       let rightEye = vr.Display.getEyeParameters("right");

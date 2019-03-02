@@ -1,14 +1,21 @@
 
 /* global: mat4, vec3, VRCubeIsland, WGLUDebugGeometry, WGLUStats, WGLUTextureLoader, VRSamplesUtil */
 
+let isProjector = webutils.getQueryStringParamterByName("projector") == 1
+
 let projector_calibration = {"vive_translate":[-0.3, -0.1, 0.1],"vive_euler": [0.0, 185.0, 0.0],"ground_position":[0.001474501914345,-0.116043269634247,-3.399029493331909],"ground_quat":[0.019847802817822,0.018058635294437,-0.011425343342125,0.999571561813354],"position":[-0.20009072124958,0.12004879117012,0.11839796602726],"frustum":[-0.540263652801514,0.686421573162079,-0.429053455591202,0.335920542478561,1,10],"rotatexyz":[-1.062064528465271,0.801017045974731,-1.60685408115387],"quat":[-0.009365003556013,0.007119102869183,-0.013956263661385,0.999833405017853],"ground_quat_fixed":[0.7208383332669634,0.004690445640796409,-0.020848320873468468,0.6927693018190737],"quat_ground":[-0.7208427585109026,-0.004690474435555491,0.020848448861813883,0.6927735547465508],"position_ground":[-0.001474501914345,0.116043269634247,3.399029493331909],"camera_position":[-0.33518560060247854,3.495735864008822,-0.3691928870850422],"camera_quat":[-0.7272938198015632,-0.010013291787240237,0.006000773148561227,0.686231795217466]}
 
 window.addEventListener("keyup", function(event) {
 	//print(event.key);
 	if (event.key == 'f') {
 		if (screenfull.enabled) {
-			screenfull.toggle(document.body);
-			//resize();
+      screenfull.toggle(document.body);
+
+      if (vr.Display.isPresenting) {
+        onVRExitPresent();
+      } else if (vr.Display.capabilities.canPresent) {
+        onVRRequestPresent();
+      }
 		}
 	} else if (event.key == " ") {
 	//	running = !running;
@@ -34,8 +41,8 @@ let isReceivingData = false;
 // WebGL setup.
 let canvas = document.getElementById("webgl-canvas");
 let gl = canvas.getContext("webgl2", { alpha: false, preserveDrawingBuffer: true, });;
-vr.init(canvas, gl);
-vr.showStats = true;
+vr.init(canvas, gl, !isProjector);
+vr.showStats = false;
 
 /////////////////////////
 
@@ -92,39 +99,37 @@ hmap.program = makeProgramFromCode(
   gl,
   `#version 300 es
 uniform mat4 u_viewmatrix, u_perspectivematrix, u_modelmatrix;
+uniform float u_setting;
 in vec3 a_location;
 in float a_height;
 out vec3 vertex;
-out float height;
-out float debug;
+out float brightness;
 
 ${vertex_shader_lib}
 
 void main() {
   vertex = a_location;
   vertex.y = a_height;
-  height = a_height;
   vec4 view_vertex = u_viewmatrix * u_modelmatrix * vec4(vertex, 1);
   gl_Position = u_perspectivematrix * view_vertex;
-  debug = clamp(length(view_vertex.xyz)*3. - 0.1, 0., 1.);
-  gl_PointSize = 3.0;
+  brightness = clamp(vertex.y*4., 0., 1.);
+  brightness *= 0.3;
+  brightness *= clamp(length(view_vertex.xyz)*3. - 0.1, 0., 1.);
 }`,
   `#version 300 es
 precision mediump float;
 in vec3 vertex;
-in float debug;
+in float brightness;
 out vec4 outColor;
 
 ${fragment_shader_lib}
 
 void main() {
-  float h = min(0.5, vertex.y*3.);
-  float home = 1. - min(1., length(vertex.xz));
-  vec2 xz = mod(vertex, 1.).xz;
-  outColor = vec4(h);
-  outColor *= debug;
+  outColor = vec4(brightness);
 
-  outColor = vec4(xz.x, home, xz.y, 1.);
+  //float home = 1. - min(1., length(vertex.xz));
+  //vec2 xz = mod(vertex, 1.).xz;
+  //outColor = vec4(xz.x, home, xz.y, 1.);
 }
 `);
 
@@ -132,6 +137,7 @@ void main() {
 hmap.u_viewmatrix_loc = gl.getUniformLocation(hmap.program, "u_viewmatrix");
 hmap.u_modelmatrix_loc = gl.getUniformLocation(hmap.program, "u_modelmatrix");
 hmap.u_perspectivematrix_loc = gl.getUniformLocation(hmap.program, "u_perspectivematrix");
+hmap.u_setting_loc = gl.getUniformLocation(hmap.program, "u_setting");
 
 hmap.vao = gl.createVertexArray();
 hmap.location_buf = gl.createBuffer();
@@ -342,7 +348,8 @@ gl.bindVertexArray(field.vao);
 }
 gl.bindVertexArray(null);
 
-let population_size = 4096;
+
+let population_size = 2048;
 let agents = [];
 
 let agent_attrib_count = 12; // 3x vec4
@@ -517,6 +524,8 @@ float map(vec3 p) {
   float final = min(ssc, es);
   final = max(final, -c);
 
+  final = s;
+
   return final + 0.02 * (1. + sin(TWOPI * (p.z*2. + abs(p.x) + time)));; //min(ssc, es);
 }
 
@@ -610,7 +619,7 @@ void main() {
     vec3 wnn = quat_rotate(world_orientation, nn);
 
     color = vec3(0.8, wnn.yz*0.5+0.5);
-    color *= properties.xyz;
+    //color *= properties.xyz;
 
     // reflect the light from above:
     color *= dot(wnn, lightdir)*0.4+0.6;
@@ -626,7 +635,7 @@ void main() {
     
     color *= alpha;
     
-    color = vec3(-properties.x);
+    //color = vec3(-properties.x);
     outColor = vec4(color, alpha);
 
 
@@ -736,7 +745,7 @@ function update() {
   t0 = t;
   let fps = 1/Math.max(0.001, dt);
   fpsAvg += 0.1*(fps-fpsAvg);
-  document.getElementById('log').textContent = `${Math.round(fpsAvg)}fps  ${canvas.width}x${canvas.height} @${Math.floor(t)} avg ${rxAvg/(1024*1024)} mb at ${(received/t)/(1024*1024)} mbps`;
+  //document.getElementById('log').textContent = `${Math.round(fpsAvg)}fps  ${canvas.width}x${canvas.height} @${Math.floor(t)} avg ${rxAvg/(1024*1024)} mb at ${(received/t)/(1024*1024)} mbps`;
 
   if (!isReceivingData) updateAgents(dt);
   updateBuffers();
@@ -747,11 +756,19 @@ function draw(vr, isInVR) {
   let perspective_matrix = vr.projectionMat;
   let view_matrix = vr.viewMat;
 
-  isInVR = true;
+  if (isProjector) {
 
-  if (!isInVR) {
+    vr.canvas.width = 1920;
+    vr.canvas.height = 1200;
+    let pview = mat4.fromQuat(mat4.create(), projector_calibration.camera_quat);
+    let ppos = mat4.fromTranslation(mat4.create(), projector_calibration.camera_position);
+
+    mat4.identity(view_matrix);
+    mat4.multiply(view_matrix, ppos, pview)
+
+    mat4.invert(view_matrix, view_matrix)
+
     let up = quat_uy([], projector_calibration.camera_quat);
-    mat4.lookAt(view_matrix, projector_calibration.camera_position, vec3.create(), up);
 
     let near = 0.1;
     mat4.frustum(perspective_matrix, 
@@ -777,6 +794,9 @@ function draw(vr, isInVR) {
       )
     );
     mat4.multiply(view_matrix, view_matrix, vive_mat);
+
+    
+    
   }
 
   //vr.cubeIsland.render(vr.projectionMat, vr.viewMat, vr.stats);
@@ -792,7 +812,7 @@ function draw(vr, isInVR) {
 
   drawscene(perspective_matrix, view_matrix, isInVR);
 
-  if (0 && isInVR) {
+  if (!isProjector) {
     mat4.translate(view_matrix, view_matrix, vec3.fromValues(0, -3, 0));
     mat4.rotateY(view_matrix, view_matrix, Math.PI);
     drawscene(perspective_matrix, view_matrix, isInVR);
@@ -828,12 +848,12 @@ function drawscene(perspective_matrix, view_matrix, isInVR) {
   // 2nd arg can by any of: SRC_COLOR, SRC_ALPHA, ONE_MINUS_SRC_COLOR, or ONE_MINUS_SRC_ALPHA
   //gl.blendFunc(gl.ZERO, gl.SRC_ALPHA);
 
-  if (1) {
-
+  if (!isProjector) {
     gl.useProgram(hmap.program);
     gl.uniformMatrix4fv(hmap.u_modelmatrix_loc, false, hmap.modelmatrix);
     gl.uniformMatrix4fv(hmap.u_viewmatrix_loc, false, view_matrix);
     gl.uniformMatrix4fv(hmap.u_perspectivematrix_loc, false, perspective_matrix);
+    gl.uniform1f(hmap.u_setting_loc, isProjector ? 1. : 0.);
     gl.bindVertexArray(hmap.vao);
     //gl.drawArrays(gl.POINTS, 0, HDIM2);
     gl.drawElements(gl.LINES, hmap.indices.length, gl.UNSIGNED_SHORT, 0);

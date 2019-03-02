@@ -39,6 +39,18 @@
 		"subpatcher_template" : "",
 		"boxes" : [ 			{
 				"box" : 				{
+					"id" : "obj-7",
+					"maxclass" : "newobj",
+					"numinlets" : 1,
+					"numoutlets" : 1,
+					"outlettype" : [ "" ],
+					"patching_rect" : [ 249.0, 185.0, 70.0, 22.0 ],
+					"text" : "loadmess 1"
+				}
+
+			}
+, 			{
+				"box" : 				{
 					"id" : "obj-21",
 					"maxclass" : "newobj",
 					"numinlets" : 1,
@@ -5927,7 +5939,7 @@
 									"numinlets" : 2,
 									"numoutlets" : 2,
 									"outlettype" : [ "", "" ],
-									"patching_rect" : [ 124.0, 100.0, 62.0, 22.0 ],
+									"patching_rect" : [ 124.0, 93.0, 62.0, 22.0 ],
 									"text" : "route port"
 								}
 
@@ -6059,7 +6071,7 @@
 					"bgfillcolor_proportion" : 0.39,
 					"bgfillcolor_type" : "color",
 					"id" : "obj-59",
-					"items" : [ "COM4", ",", "COM1" ],
+					"items" : [ "COM1", ",", "COM3" ],
 					"labelclick" : 1,
 					"maxclass" : "umenu",
 					"numinlets" : 1,
@@ -6364,6 +6376,13 @@
 					"destination" : [ "obj-12", 0 ],
 					"midpoints" : [ 201.5, 352.0, 326.5, 352.0, 326.5, 161.0, 164.5, 161.0 ],
 					"source" : [ "obj-67", 1 ]
+				}
+
+			}
+, 			{
+				"patchline" : 				{
+					"destination" : [ "obj-59", 0 ],
+					"source" : [ "obj-7", 0 ]
 				}
 
 			}

@@ -25,6 +25,7 @@ canvas {
   color: #fff;
   background-color: hsla(50, 0%, 10%, .75);
   z-index: 10;
+  display: none;
 }
 
 #overlay {
@@ -40,10 +41,16 @@ canvas {
     /* display: none; */
 }
 
+/* hide mouse */
+* {
+    cursor: none;
+}
+
 </style>
 <body>
 <canvas id="webgl-canvas"></canvas>
 <div id="log">log</div>
+<img id="overlay" src="vignette.png"></img>
 
 <script src="libs/gl-matrix-min.js"></script>  
 <script src="libs/screenfull.js"></script>  

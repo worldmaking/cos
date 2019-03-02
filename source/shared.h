@@ -17,7 +17,7 @@ static const int STALKS_MAX = 36;
 
 static const int DUST_MAX = 1e5;
 
-static const int AGENTS_MAX = 4096;
+static const int AGENTS_MAX = 2048;
 static const int MORPHOGENS_MAX = 4;
 // maximum number of agents a spatial query can return
 static const int NEIGHBOURS_MAX = 12;

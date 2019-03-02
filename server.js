@@ -335,7 +335,8 @@ function handlemessage(msg, session) {
 
 server.listen(8080, function() {
 	console.log(`server listening`);
-	console.log(`main view on http://localhost:${server.address().port}/index.html`);
+	console.log(`vr view on http://localhost:${server.address().port}/index.html`);
+	console.log(`projector view on http://localhost:${server.address().port}/index.html?projector=1`);
 });
 
 let t0=performance.now()*0.001;
