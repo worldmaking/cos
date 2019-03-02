@@ -8,7 +8,7 @@ window.addEventListener("keyup", function(event) {
 	if (event.key == 'f') {
 		if (screenfull.enabled) {
 			screenfull.toggle(document.body);
-			resize();
+			//resize();
 		}
 	} else if (event.key == " ") {
 	//	running = !running;
@@ -121,11 +121,10 @@ void main() {
   float h = min(0.5, vertex.y*3.);
   float home = 1. - min(1., length(vertex.xz));
   vec2 xz = mod(vertex, 1.).xz;
-  outColor = vec4(xz.x, home, xz.y, 1.);
   outColor = vec4(h);
   outColor *= debug;
 
-  //outColor = vec4(1.);
+ // outColor = vec4(xz.x, home, xz.y, 1.);
 }
 `);
 
@@ -453,6 +452,7 @@ precision mediump float;
 
 ${fragment_shader_lib}
 
+uniform float u_isvr;
 in vec3 normal, eyepos, ray_origin, ray_direction;
 in float time, scale;
 in vec3 world_vertex;
@@ -541,7 +541,9 @@ void main() {
   vec3 color = vec3(1.);
   
 
-  float distance = pow(length(world_vertex - eyepos), 2.);
+  float distance_vr = length(world_vertex - eyepos);
+  float distance_floor = world_vertex.y;
+  float distance = u_isvr != 0. ? distance_vr : distance_floor;
 
   vec3 rd = normalize(ray_direction);
 
@@ -554,7 +556,7 @@ void main() {
 
   // 0.001 at dist=0
   // 0.05 at dist = 1
-  float EPS = 0.0001 + 0.05*(distance);// * distance;
+  float EPS = 0.0001 + 0.05*(distance*distance);// * distance;
   #define FAR 2.*sqrt(3.)
 
   vec3 p = ro;
@@ -593,7 +595,7 @@ void main() {
 
   float alpha = 0.;
   
-  if (contact > 0) {
+  if (contact > 0 && (u_isvr != 0. || world_vertex.y > 0.)) {
    // 
 
     // also write to depth buffer, for detailed occlusion:
@@ -616,14 +618,20 @@ void main() {
     //alpha = clamp(s * 0.05, 0., 1.);
     alpha = pow(alpha, 1.2);
     
+    // TODO: projector fade if u_isvr == 0.;
+    alpha = mix(alpha / (1. + world_vertex.y*0.5), alpha, u_isvr);
+    
     color *= alpha;
+    
+
+    outColor = vec4(color, alpha);
+
   } else {
     discard;
     //gl_FragDepth = 0.99999;
   }
 
 
-	outColor = vec4(color, alpha);
 }
 `
 );
@@ -633,6 +641,7 @@ let u_perspectivematrix_loc = gl.getUniformLocation(
   "u_perspectivematrix"
 );
 let u_time_loc = gl.getUniformLocation(program, "u_time");
+let u_isvr_loc = gl.getUniformLocation(program, "u_isvr");
 
 let vao = gl.createVertexArray();
 let vertex_buf = gl.createBuffer();
@@ -739,25 +748,31 @@ function draw(vr, isInVR) {
     let up = quat_uy([], projector_calibration.camera_quat);
     mat4.lookAt(view_matrix, projector_calibration.camera_position, vec3.create(), up);
 
-    mat4.identity(perspective_matrix);
-    mat4.frustum(perspective_matrix, projector_calibration.frustum[0], projector_calibration.frustum[1], projector_calibration.frustum[2], projector_calibration.frustum[3], 1., 10.);
-  }
+    let near = 0.1;
+    mat4.frustum(perspective_matrix, 
+      near*projector_calibration.frustum[0], 
+      near*projector_calibration.frustum[1], 
+      near*projector_calibration.frustum[2], 
+      near*projector_calibration.frustum[3], 
+      near, 10.);
 
-  // adjust vr viewmat to match the kinect world space:
-  let vive_mat = mat4.fromRotationTranslation(
-    mat4.create(), 
-    quat.fromEuler(quat.create(), 
-      projector_calibration.vive_euler[0], 
-      projector_calibration.vive_euler[1], 
-      projector_calibration.vive_euler[2]
-    ), 
-    vec3.fromValues(
-      projector_calibration.vive_translate[0], 
-      projector_calibration.vive_translate[1], 
-      projector_calibration.vive_translate[2]
-    )
-  );
-  mat4.multiply(view_matrix, view_matrix, vive_mat);
+  } else {
+    // adjust vr viewmat to match the kinect world space:
+    let vive_mat = mat4.fromRotationTranslation(
+      mat4.create(), 
+      quat.fromEuler(quat.create(), 
+        projector_calibration.vive_euler[0], 
+        projector_calibration.vive_euler[1], 
+        projector_calibration.vive_euler[2]
+      ), 
+      vec3.fromValues(
+        projector_calibration.vive_translate[0], 
+        projector_calibration.vive_translate[1], 
+        projector_calibration.vive_translate[2]
+      )
+    );
+    mat4.multiply(view_matrix, view_matrix, vive_mat);
+  }
 
   //vr.cubeIsland.render(vr.projectionMat, vr.viewMat, vr.stats);
   if (0) {
@@ -770,14 +785,15 @@ function draw(vr, isInVR) {
     vr.stats.render(perspective_matrix, vr.cubeIsland.statsMat);
   }
 
-  drawscene(perspective_matrix, view_matrix);
+  drawscene(perspective_matrix, view_matrix, isInVR);
 
-  //mat4.translate(view_matrix, view_matrix, vec3.fromValues(0, -3, 0));
-  //drawscene(perspective_matrix, view_matrix);
+  if (isInVR) {
+    mat4.translate(view_matrix, view_matrix, vec3.fromValues(0, -3, 0));
+    drawscene(perspective_matrix, view_matrix);
+  }
 }
 
-function drawscene(perspective_matrix, view_matrix) {
-  
+function drawscene(perspective_matrix, view_matrix, isInVR) {
 
   // if (0) {
   //   gl.useProgram(field.program);
@@ -823,6 +839,7 @@ function drawscene(perspective_matrix, view_matrix) {
   if (1) {
     gl.useProgram(program);
     gl.uniform1f(u_time_loc, t);
+    gl.uniform1f(u_isvr_loc, isInVR ? 1. : 0.);
     gl.uniformMatrix4fv(u_viewmatrix_loc, false, view_matrix);
     gl.uniformMatrix4fv(u_perspectivematrix_loc, false, perspective_matrix);
     gl.bindVertexArray(vao);
@@ -855,7 +872,7 @@ try {
 		sock = new Socket({
 			reload_on_disconnect: true,
 			onopen: function() {
-				//this.send({ cmd: "getdata", date: Date.now() });
+        //this.send({ cmd: "getdata", date: Date.now() });
 			},
 			onmessage: function(msg) { 
         console.log("received", msg);

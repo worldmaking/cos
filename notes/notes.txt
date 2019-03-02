@@ -1,4 +1,22 @@
 
+- Check projector calibration looks OK
+
+- creatures should respond to human geometry
+
+- calibrate bell locations; should we visualize them with something?
+	- would be helpful at least to visualize vive controllers during calibration... 
+
+- vignette on shadow view?
+	- needs an fbo really
+
+- creature shadow-view: uses distance but should really use height
+	- use a param to mix between eye-distance and world_vertex.y as the factor?
+
+- some degree of auto-reloading?
+	
+
+--------------------
+
 Tech minimum:
 
 - vive hmd (controllers useful for calibration)
