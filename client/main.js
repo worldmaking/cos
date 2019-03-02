@@ -1,3 +1,4 @@
+
 /* global: mat4, vec3, VRCubeIsland, WGLUDebugGeometry, WGLUStats, WGLUTextureLoader, VRSamplesUtil */
 
 let projector_calibration = {"vive_translate":[-0.3, -0.1, 0.1],"vive_euler": [0.0, 185.0, 0.0],"ground_position":[0.001474501914345,-0.116043269634247,-3.399029493331909],"ground_quat":[0.019847802817822,0.018058635294437,-0.011425343342125,0.999571561813354],"position":[-0.20009072124958,0.12004879117012,0.11839796602726],"frustum":[-0.540263652801514,0.686421573162079,-0.429053455591202,0.335920542478561,1,10],"rotatexyz":[-1.062064528465271,0.801017045974731,-1.60685408115387],"quat":[-0.009365003556013,0.007119102869183,-0.013956263661385,0.999833405017853],"ground_quat_fixed":[0.7208383332669634,0.004690445640796409,-0.020848320873468468,0.6927693018190737],"quat_ground":[-0.7208427585109026,-0.004690474435555491,0.020848448861813883,0.6927735547465508],"position_ground":[-0.001474501914345,0.116043269634247,3.399029493331909],"camera_position":[-0.33518560060247854,3.495735864008822,-0.3691928870850422],"camera_quat":[-0.7272938198015632,-0.010013291787240237,0.006000773148561227,0.686231795217466]}
@@ -124,7 +125,7 @@ void main() {
   outColor = vec4(h);
   outColor *= debug;
 
-  outColor = vec4(1.);
+  //outColor = vec4(1.);
 }
 `);
 
@@ -738,7 +739,8 @@ function draw(vr, isInVR) {
     let up = quat_uy([], projector_calibration.camera_quat);
     mat4.lookAt(view_matrix, projector_calibration.camera_position, vec3.create(), up);
 
-    mat4.frustum(perspective_matrix, projector_calibration.frustum[0], projector_calibration.frustum[1], projector_calibration.frustum[2], projector_calibration.frustum[3], 0.1, 10.);
+    mat4.identity(perspective_matrix);
+    mat4.frustum(perspective_matrix, projector_calibration.frustum[0], projector_calibration.frustum[1], projector_calibration.frustum[2], projector_calibration.frustum[3], 1., 10.);
   }
 
   // adjust vr viewmat to match the kinect world space:
