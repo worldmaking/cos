@@ -17,14 +17,14 @@ static const int STALKS_MAX = 36;
 
 static const int DUST_MAX = 1e5;
 
-static const int AGENTS_MAX = 2048;
+static const int AGENTS_MAX = 1024;
 static const int MORPHOGENS_MAX = 4;
 // maximum number of agents a spatial query can return
 static const int NEIGHBOURS_MAX = 12;
 static const int LINKS_MAX = AGENTS_MAX * NEIGHBOURS_MAX * 4;
 
 glm::vec3 world_min = glm::vec3(-3., 0., -3.);
-glm::vec3 world_max = glm::vec3( 3., 6.,  3.);
+glm::vec3 world_max = glm::vec3( 3., 3.,  3.);
 glm::vec3 world_dim = world_max - world_min;
 glm::vec3 world_scale = 1.f/world_dim;
 glm::mat4 WorldMatrix = glm::scale(glm::translate(glm::mat4(1.0f), world_min), world_max - world_min);
@@ -103,6 +103,15 @@ STRUCT_ALIGN_BEGIN struct Agent {
 	float antigen;
 	int32_t id;
 	int32_t neighbours_count;
+
+	float land = 0.f;
+	// +ve if above the land (in meters)
+	float above_land;
+	// if this is +ve, we are inside the creature. it will never be greater than 1
+	// if it is -ve, how far we are outside, in number of body-sizes
+	float inside_land;
+
+	float speed = agent_max_speed;
 	
 	void reset(int id) {
 		this->id = id;
@@ -382,7 +391,7 @@ STRUCT_ALIGN_BEGIN struct Shared {
 			Agent& a = agents[i];
 			// increment velocity by acceleration
 			// and constrain to limits:
-			a.vel = limit(a.vel + a.acc, agent_max_speed);
+			a.vel = limit(a.vel + a.acc, a.speed);
 			a.quat = turn_toward(a.quat, a.vel);
 			
 			// increment position by velocity
@@ -391,6 +400,10 @@ STRUCT_ALIGN_BEGIN struct Shared {
 			// convert position to land cell coordinate
 			// let zoom = 2; let  pos = [((x/HDIM) * 2 - 1) * zoom, 0, ((y/HDIM) * 2 -1) * zoom];
 			float izoom = 1/2.f;
+
+			a.speed += 0.01 *(agent_max_speed - a.speed);
+
+			// maybe use the lookahead point?
 			glm::vec2 pos2 = (glm::vec2(a.pos.x, a.pos.z) * izoom + 1.f) * (0.5f * LAND_DIM);
 			a.landidx = hmap.index_oob(pos2.x, pos2.y);
 
@@ -412,17 +425,16 @@ STRUCT_ALIGN_BEGIN struct Shared {
 			
 			if (a.landidx >= 0) {
 			 	float h = hmap.data[a.landidx];
+				 a.land = h;
 				// +ve if above the land (in meters)
-				float rh = a.pos.y - h; 
-				// if this is +ve, we are inside the creature. it will never be greater than 1
-				// if it is -ve, how far we are outside, in number of body-sizes
-				float inside = a.size - fabs(rh) / a.size; 
-				a.antigen = inside;
-				a.morphogens[1] = rh;
+				a.above_land = a.pos.y - h - a.size; 
 			} else {
-				a.antigen = 0;
-				a.morphogens[1] = 0;
+				a.land = 0.f;
+				a.above_land = a.pos.y - a.size;
 			}
+			// if this is +ve, we are inside the creature. it will never be greater than 1
+			// if it is -ve, how far we are outside, in number of body-sizes
+			a.inside_land = fabs(a.above_land) / a.size; 
 			
 		}
 		// copy to rendering state:
@@ -640,12 +652,15 @@ STRUCT_ALIGN_BEGIN struct Shared {
 			// by slightly changing current velocity
 			glm::quat q = glm::angleAxis(glm::linearRand(0.f, agent_randomwalk), glm::linearRand(glm::vec3(-1.), glm::vec3(1)));
 			desired_velocity = quat_rotate(q, desired_velocity);
+
+			
 			
 			// apply factors due to neighbours:
 			if (a.neighbours_count > 0) {
 				// cohesion (move to center)
 				// compute the average relative vector to all neighbours:
 			  	a.attractions *= agent_centering_factor / a.neighbours_count;
+
 			  	
 			  	a.flows *= agent_flow_factor / a.neighbours_count;
 				
@@ -658,6 +673,17 @@ STRUCT_ALIGN_BEGIN struct Shared {
 			
 			// apply avoidances (obstacles and neighbours)
 			a.avoidances *= agent_avoidance_factor;
+
+			if (a.land > 0.4f) {
+				// apply impact of person:
+				float mydist = fabs(a.inside_land);
+				//a.avoidances += glm::vec3(0., -mag*a.above_land, 0.);
+
+				if (mydist < 10.f) {
+					a.speed = agent_max_speed * mydist / 5.f;
+				} 
+			}
+
 			desired_velocity += (a.avoidances);
 			
 			// finally, use the desired velocity to compute the steering force:

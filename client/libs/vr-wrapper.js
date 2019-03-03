@@ -106,13 +106,13 @@ let vr = {
             vr.cubeIsland.resize(vr.Display.stageParameters.sizeX, vr.Display.stageParameters.sizeZ);
           }
   
-          if (vr.Display.capabilities.canPresent)
-            vr.PresentButton = VRSamplesUtil.addButton(
-              "Enter VR",
-              "E",
-              "media/icons/cardboard64.png",
-              onVRRequestPresent
-            );
+          // if (vr.Display.capabilities.canPresent)
+          //   vr.PresentButton = VRSamplesUtil.addButton(
+          //     "Enter VR",
+          //     "E",
+          //     "media/icons/cardboard64.png",
+          //     onVRRequestPresent
+          //   );
   
           window.addEventListener(
             "vrdisplaypresentchange",
@@ -181,27 +181,27 @@ let vr = {
   function onVRPresentChange() {
     onResize();
     console.log("onVRPresentChange", vr.Display.isPresenting)
-    if (vr.Display.isPresenting) {
-      if (vr.Display.capabilities.hasExternalDisplay) {
-        VRSamplesUtil.removeButton(vr.PresentButton);
-        vr.PresentButton = VRSamplesUtil.addButton(
-          "Exit VR",
-          "E",
-          "media/icons/cardboard64.png",
-          onVRExitPresent
-        );
-      }
-    } else {
-      if (vr.Display.capabilities.hasExternalDisplay) {
-        VRSamplesUtil.removeButton(vr.PresentButton);
-        vr.PresentButton = VRSamplesUtil.addButton(
-          "Enter VR",
-          "E",
-          "media/icons/cardboard64.png",
-          onVRRequestPresent
-        );
-      }
-    }
+    // if (vr.Display.isPresenting) {
+    //   if (vr.Display.capabilities.hasExternalDisplay) {
+    //     VRSamplesUtil.removeButton(vr.PresentButton);
+    //     vr.PresentButton = VRSamplesUtil.addButton(
+    //       "Exit VR",
+    //       "E",
+    //       "media/icons/cardboard64.png",
+    //       onVRExitPresent
+    //     );
+    //   }
+    // } else {
+    //   if (vr.Display.capabilities.hasExternalDisplay) {
+    //     VRSamplesUtil.removeButton(vr.PresentButton);
+    //     vr.PresentButton = VRSamplesUtil.addButton(
+    //       "Enter VR",
+    //       "E",
+    //       "media/icons/cardboard64.png",
+    //       onVRRequestPresent
+    //     );
+    //   }
+    // }
   }
     
   function onResize() {

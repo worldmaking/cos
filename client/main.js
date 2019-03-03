@@ -17,6 +17,13 @@ window.addEventListener("keyup", function(event) {
         onVRRequestPresent();
       }
 		}
+	} else if (event.key == 'e') {
+
+      if (vr.Display.isPresenting) {
+        onVRExitPresent();
+      } else if (vr.Display.capabilities.canPresent) {
+        onVRRequestPresent();
+      }
 	} else if (event.key == " ") {
 	//	running = !running;
 	} else if (event.key == "r") {
@@ -349,7 +356,7 @@ gl.bindVertexArray(field.vao);
 gl.bindVertexArray(null);
 
 
-let population_size = 2048;
+let population_size = 1024;
 let agents = [];
 
 let agent_attrib_count = 12; // 3x vec4
@@ -498,15 +505,15 @@ float sdCapsuleRipple(vec3 p, vec3 a, vec3 b, float ra, float rb, float timephas
 float map(vec3 p) {
   float t1 = (cos(time * -TWOPI)*0.2+0.8);
   float t2 = (sin(time * -TWOPI)*0.3+0.7);
-  float s = fSphere(p, t1);
+  //float s = fSphere(p, t1);
   float s1 = fSphere(p+vec3(0, 0, 0.3), 0.7*t1);
   float s2 = fSphere(p+vec3(0, 0, 0.3), 0.6*t2);
   float sh = max(s1, -s2);
-  float c = fCylinder(p.xzy, 0.2, 1.);
-  float b = fBox(p, vec3(0.5, 1., 0.1));
-  float sc = smin(s, c, 0.2);
-  float cb = smin(c, b, 0.2);
-  float bs = smin(b, s, 0.2);
+  //float c = fCylinder(p.xzy, 0.2, 1.);
+  // float b = fBox(p, vec3(0.5, 1., 0.1));
+  // float sc = smin(s, c, 0.2);
+  // float cb = smin(c, b, 0.2);
+  // float bs = smin(b, s, 0.2);
 
   vec3 A = vec3(0, 0, 0.7);
   vec3 B = vec3(0, 0, -0.7);
@@ -515,16 +522,16 @@ float map(vec3 p) {
   float C2 = sdCapsule1(p, A, B, 0.1);
   float C = max(C1, -C2);
 
-  float ss = smin(s1, s2, 0.3);
+  //float ss = smin(s1, s2, 0.3);
   float ssc = smin(sh, C, .1);
 
   float e0 = fSphere(p+vec3(+0.4, 0., 0.7), 0.3);
   float e1 = fSphere(p+vec3(-0.4, 0., 0.7), 0.3);
   float es = min(e0, e1);
   float final = min(ssc, es);
-  final = max(final, -c);
+  //final = max(final, -c);
 
-  final = s;
+ //final = s;
 
   return final + 0.02 * (1. + sin(TWOPI * (p.z*2. + abs(p.x) + time)));; //min(ssc, es);
 }
@@ -618,7 +625,8 @@ void main() {
     // in world space
     vec3 wnn = quat_rotate(world_orientation, nn);
 
-    color = vec3(0.8, wnn.yz*0.5+0.5);
+    color = vec3(0.8, wnn.yz*0.25+0.75);
+    color = mix (vec3(0.9), color, u_isvr);
     //color *= properties.xyz;
 
     // reflect the light from above:
@@ -631,9 +639,10 @@ void main() {
     alpha = pow(alpha, 1.2);
     
     // TODO: projector fade if u_isvr == 0.;
-    alpha = mix(alpha / (1. + world_vertex.y*0.5), alpha, u_isvr);
+    alpha = mix(1. - (alpha / (1. + world_vertex.y*0.5)), alpha, u_isvr);
+
     
-    color *= alpha;
+    //color *= alpha;
     
     //color = vec3(-properties.x);
     outColor = vec4(color, alpha);
@@ -751,6 +760,10 @@ function update() {
   updateBuffers();
 }
 
+if (isProjector) {
+  
+  gl.clearColor(1., 1., 1., 1.0);
+}
 
 function draw(vr, isInVR) {
   let perspective_matrix = vr.projectionMat;
@@ -813,7 +826,7 @@ function draw(vr, isInVR) {
   drawscene(perspective_matrix, view_matrix, isInVR);
 
   if (!isProjector) {
-    mat4.translate(view_matrix, view_matrix, vec3.fromValues(0, -3, 0));
+    mat4.translate(view_matrix, view_matrix, vec3.fromValues(0, -4, 0));
     mat4.rotateY(view_matrix, view_matrix, Math.PI);
     drawscene(perspective_matrix, view_matrix, isInVR);
   }
@@ -839,14 +852,19 @@ function drawscene(perspective_matrix, view_matrix, isInVR) {
   //gl.disable(gl.DEPTH_TEST)
   gl.enable(gl.BLEND);
   gl.depthMask(false);
-  // additive (for black background):
-  // first arg can be any of: ONE, SRC_COLOR, SRC_ALPHA, or ONE_MINUS_SRC_ALPHA
-  gl.blendFunc(gl.ONE, gl.ONE);
-  //gl.blendFunc(gl.SRC_COLOR, gl.ONE);
-  gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
+  if (isProjector) {
+      
   // multiplicative (for white background):
   // 2nd arg can by any of: SRC_COLOR, SRC_ALPHA, ONE_MINUS_SRC_COLOR, or ONE_MINUS_SRC_ALPHA
-  //gl.blendFunc(gl.ZERO, gl.SRC_ALPHA);
+    gl.blendFunc(gl.ZERO, gl.SRC_ALPHA);
+  } else {
+    
+    // additive (for black background):
+    // first arg can be any of: ONE, SRC_COLOR, SRC_ALPHA, or ONE_MINUS_SRC_ALPHA
+    gl.blendFunc(gl.ONE, gl.ONE);
+    //gl.blendFunc(gl.SRC_COLOR, gl.ONE);
+    gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
+  }
 
   if (!isProjector) {
     gl.useProgram(hmap.program);
@@ -897,6 +915,7 @@ try {
 	if (window.location.hostname == "localhost") {
 		sock = new Socket({
 			reload_on_disconnect: true,
+      reconnect_period: 10000,
 			onopen: function() {
         //this.send({ cmd: "getdata", date: Date.now() });
 			},
